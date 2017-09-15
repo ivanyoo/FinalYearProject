@@ -2,8 +2,8 @@ const app = require('express')();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 
-server.listen(80);
-let userid = 0;
+server.listen(8081);
+let userid = 1;
 
 app.get('/', (req, res) => {
    userid++;
@@ -16,7 +16,7 @@ io.on('connection', (socket) => {
       console.log(data);
    });
 
-   socket.on('idSendEvent', (data) => {
-      console.log('idSendEvent ' + data.id);
+   socket.on('answerEvent', (data) => {
+      console.log(`Player ${data.id} answered ${data.answer}`);
    });
 });
