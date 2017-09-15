@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+</head>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io.connect('http://localhost');
+    let id;
+    socket.on('news', (data) => {
+        console.log(data);
+        id = data.id;
+        socket.emit('my other event', { my: 'data', id: data.id });
+    });
+
+    const sendId = () => {
+      socket.emit('idSendEvent', {id: id});
+    };
+</script>
+<body>
+<button onclick="sendId()">Send ID</button>
+</body>
+</html>
