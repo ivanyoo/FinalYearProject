@@ -7,28 +7,48 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io.connect('http://localhost');
+    let username;
+    let sessionRoomNumber;
 
-    socket.on('roomevent', () => {
-       console.log('room event triggered');
+    socket.on('roomJoinedEvent', () => {
+        console.log('Joined room');
+    document.getElementById('findRoom').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
     });
 
     const answer = (result) => {
-      socket.emit('answerEvent', {answer: result});
+        console.log(sessionRoomNumber);
+        socket.emit(`answerEvent`, {answer: result, username: username});
     };
 
+    socket.on('roomFoundEvent', (data) => {
+       socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber});
+    sessionRoomNumber = data.sessionRoomNumber;
+    });
+
+    socket.on('answerMatchEvent', () => {
+        document.getElementById('game').style.display = 'none';
+        document.getElementById('result').value = 'You won';
+    });
+
     const joinRoom = () => {
-      document.getElementById('joinRoomButton').style.display = 'none';
-      document.getElementById('game').style.display = 'block';
-      socket.emit('joinRoomEvent');
+        document.getElementById('joinRoom').style.display = 'none';
+        document.getElementById('findRoom').style.display = 'block';
+        username = document.getElementById('username').value;
+        socket.emit('findRoomEvent', {username: username});
     };
 </script>
 <body>
-<button id="joinRoomButton" onclick="joinRoom()">Join room</button>
+<div id="joinRoom">
+    <input type="text" id="username" />
+    <button onclick="joinRoom()">Join room</button>
+</div>
+<div style="display: none" id="findRoom">Finding room</div>
 <div id="game" style="display: none">
     <img src="https://images.unsplash.com/photo-1504595403659-9088ce801e29" alt="doggies" height="450" width="300">
     <button onclick="answer('good')">Good doggies</button>
     <button onclick="answer('bad')">Bad doggies</button>
 </div>
-
+<div><p id="result"></p></div>
 </body>
 </html>
