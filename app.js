@@ -7,6 +7,7 @@ server.listen(80);
 let userid = 1;
 let roomNumber = 1;
 const playerQueue = new Queue();
+const opponentSockets = {};
 
 app.get('/', (req, res) => {
    res.sendFile(`${__dirname}/index.html`);
@@ -14,33 +15,41 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
    let sessionRoomNumber;
-   let answers = [];
+   let opponent;
 
    socket.on(`answerEvent`, (data) => {
-      answers.push(data.answer);
-      io.to(`testroom-${sessionRoomNumber}`).emit('opponentAnswerEvent', {answer: data.answer});
+      opponent.socket.emit('opponentAnswerEvent', {answer: data.answer, username: data.username});
+      socket.emit('opponentAnswerEvent', {answer: data.answer, username: data.username});
    });
 
-   socket.on('opponentAnswerEvent', (data) => {
-      if (answers.includes(data.answer)) {
-         io.to(`testroom-${sessionRoomNumber}`).emit('answerMatchEvent');
-      }
+   socket.on('answerMatchEvent', (data) => {
+      socket.emit('finishGameEvent', {result: 1});
+      opponent.socket.emit('finishGameEvent', {result: 1});
+      console.log('finished');
    });
 
    socket.on('joinRoomEvent', (data) => {
       socket.join(`testroom-${data.roomNumber}`);
+      if (!opponent) {
+         opponent = opponentSockets[data.username];
+         delete opponentSockets[data.username];
+      }
       socket.emit('roomJoinedEvent');
 });
+
+
 
    socket.on('findRoomEvent', (data) => {
       userid++;
       if (playerQueue.getLength() > 0) {
          sessionRoomNumber = roomNumber;
          roomNumber++;
-         playerQueue.dequeue().emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber});
-         socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber});
+         opponent = playerQueue.dequeue();
+         opponentSockets[opponent.username] = {socket: socket, username: data.username};
+         opponent.socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: data.username});
+         socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: opponent.username});
       } else {
-         playerQueue.enqueue(socket);
+         playerQueue.enqueue({socket: socket, username: data.username});
       }
    });
 });

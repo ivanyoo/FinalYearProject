@@ -6,9 +6,11 @@
 </head>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    const socket = io.connect('http://localhost');
+    const socket = io.connect('http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/');
     let username;
+    let opponent;
     let sessionRoomNumber;
+    let answers = [];
 
     socket.on('roomJoinedEvent', () => {
         console.log('Joined room');
@@ -18,17 +20,27 @@
 
     const answer = (result) => {
         console.log(sessionRoomNumber);
+        answers.push(result);
         socket.emit(`answerEvent`, {answer: result, username: username});
     };
 
     socket.on('roomFoundEvent', (data) => {
-       socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber});
+       socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username});
     sessionRoomNumber = data.sessionRoomNumber;
+    opponent = data.opponent;
     });
 
-    socket.on('answerMatchEvent', () => {
+    socket.on('opponentAnswerEvent', (data) => {
+        console.log(data);
+        if (answers.includes(data.answer) && data.username === opponent) {
+            socket.emit('answerMatchEvent');
+        }
+    });
+
+    socket.on('finishGameEvent', (data) => {
+        console.log('!');
         document.getElementById('game').style.display = 'none';
-        document.getElementById('result').value = 'You won';
+        document.getElementById('result').style.display = 'block';
     });
 
     const joinRoom = () => {
@@ -49,6 +61,6 @@
     <button onclick="answer('good')">Good doggies</button>
     <button onclick="answer('bad')">Bad doggies</button>
 </div>
-<div><p id="result"></p></div>
+<div id="result" style="display: none"><p>You Picked the same thing as your opponent. Well done </p></div>
 </body>
 </html>
