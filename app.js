@@ -3,7 +3,7 @@ const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const Queue = require('./Queue.src');
 
-server.listen(80);
+server.listen(8081);
 let userid = 1;
 let roomNumber = 1;
 const playerQueue = new Queue();
