@@ -6,19 +6,61 @@
 </head>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    const socket = io.connect('http://localhost');
-    let id;
-    socket.on('news', (data) => {
-        console.log(data);
-        id = data.id;
-        socket.emit('my other event', { my: 'data', id: data.id });
+    const socket = io.connect('http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/');
+    let username;
+    let opponent;
+    let sessionRoomNumber;
+    let answers = [];
+
+    socket.on('roomJoinedEvent', () => {
+        console.log('Joined room');
+    document.getElementById('findRoom').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
     });
 
-    const sendId = () => {
-      socket.emit('idSendEvent', {id: id});
+    const answer = (result) => {
+        console.log(sessionRoomNumber);
+        answers.push(result);
+        socket.emit(`answerEvent`, {answer: result, username: username});
+    };
+
+    socket.on('roomFoundEvent', (data) => {
+       socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username});
+    sessionRoomNumber = data.sessionRoomNumber;
+    opponent = data.opponent;
+    });
+
+    socket.on('opponentAnswerEvent', (data) => {
+        console.log(data);
+        if (answers.includes(data.answer) && data.username === opponent) {
+            socket.emit('answerMatchEvent');
+        }
+    });
+
+    socket.on('finishGameEvent', (data) => {
+        console.log('!');
+        document.getElementById('game').style.display = 'none';
+        document.getElementById('result').style.display = 'block';
+    });
+
+    const joinRoom = () => {
+        document.getElementById('joinRoom').style.display = 'none';
+        document.getElementById('findRoom').style.display = 'block';
+        username = document.getElementById('username').value;
+        socket.emit('findRoomEvent', {username: username});
     };
 </script>
 <body>
-<button onclick="sendId()">Send ID</button>
+<div id="joinRoom">
+    <input type="text" id="username" />
+    <button onclick="joinRoom()">Join room</button>
+</div>
+<div style="display: none" id="findRoom">Finding room</div>
+<div id="game" style="display: none">
+    <img src="https://images.unsplash.com/photo-1504595403659-9088ce801e29" alt="doggies" height="450" width="300">
+    <button onclick="answer('good')">Good doggies</button>
+    <button onclick="answer('bad')">Bad doggies</button>
+</div>
+<div id="result" style="display: none"><p>You Picked the same thing as your opponent. Well done </p></div>
 </body>
 </html>
