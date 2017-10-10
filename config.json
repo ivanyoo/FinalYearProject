@@ -1,0 +1,8 @@
+{
+  "AWS_DB": {
+    "host" : "photo-tagging.c98c8mbcwagg.eu-west-1.rds.amazonaws.com",
+    "password": "CK4012018",
+    "user": "photo-tagging",
+    "database": "photo_tagging"
+  }
+}

@@ -1,5 +1,9 @@
+const express = require('express');
+const mysql = require('mysql');
 const app = require('express')();
+const path = require('path');
 const server = require('http').Server(app);
+const config = require('./config.json');
 const io = require('socket.io')(server);
 const Queue = require('./Queue.src');
 
@@ -9,13 +13,28 @@ let roomNumber = 1;
 const playerQueue = new Queue();
 const opponentSockets = {};
 
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.get('/', (req, res) => {
-   res.sendFile(`${__dirname}/index.html`);
+   res.send('root');
 });
+
+const getImage= (imageNumber, callback) => {
+  const connection = mysql.createConnection(config.AWS_DB);
+  connection.connect();
+  connection.query('SELECT webformatURL, tags FROM pixabay_images WHERE id = ?', [imageNumber], (err, results) => {
+     connection.end();
+     if (err) {
+        return callback(err);
+     }
+     callback(null, results[0]);
+  });
+};
 
 io.on('connection', (socket) => {
    let sessionRoomNumber;
    let opponent;
+   let image = 2;
 
    socket.on(`answerEvent`, (data) => {
       opponent.socket.emit('opponentAnswerEvent', {answer: data.answer, username: data.username});
@@ -23,9 +42,11 @@ io.on('connection', (socket) => {
    });
 
    socket.on('answerMatchEvent', (data) => {
-      socket.emit('finishGameEvent', {result: 1});
-      opponent.socket.emit('finishGameEvent', {result: 1});
-      console.log('finished');
+      image++;
+      getImage(image, (err, results) => {
+         socket.emit('newImageEvent', results);
+         opponent.socket.emit('newImageEvent', results);
+      });
    });
 
    socket.on('joinRoomEvent', (data) => {
@@ -34,8 +55,10 @@ io.on('connection', (socket) => {
          opponent = opponentSockets[data.username];
          delete opponentSockets[data.username];
       }
-      socket.emit('roomJoinedEvent');
-});
+      getImage(image, (err, results) => {
+        socket.emit('roomJoinedEvent', results);
+      });
+   });
 
 
 
