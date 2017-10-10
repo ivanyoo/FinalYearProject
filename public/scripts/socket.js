@@ -1,4 +1,4 @@
-const socket = io.connect('localhost');
+const socket = io.connect('http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/');
 //'http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/'
 let username;
 let opponent;
@@ -16,7 +16,7 @@ class Room extends React.Component {
   }
 
   changeImage(imageURL) {
-    this.setState({ imageURL });
+    this.setState({ imageURL, submittedWords: [] });
   }
 
   getSubmittedWords() {
@@ -72,11 +72,13 @@ class Room extends React.Component {
   }
 }
 
-socket.on('roomJoinedEvent', () => {
+socket.on('roomJoinedEvent', (data) => {
   console.log('Joined room');
 document.getElementById('findRoom').style.display = 'none';
 room = ReactDOM.render(<Room/>,
-  document.getElementById('game-container'))
+  document.getElementById('game-container'));
+  console.log(data);
+  room.changeImage(data.webformatURL);
 });
 
 const answer = (result) => {
@@ -89,6 +91,10 @@ socket.on('roomFoundEvent', (data) => {
   socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username});
 sessionRoomNumber = data.sessionRoomNumber;
 opponent = data.opponent;
+});
+
+socket.on('newImageEvent', (data) => {
+  room.changeImage(data.webformatURL);
 });
 
 socket.on('opponentAnswerEvent', (data) => {
