@@ -6,7 +6,8 @@ const server = require('http').Server(app);
 const config = require('./config.json');
 const io = require('socket.io')(server);
 const Queue = require('./Queue.src');
-server.listen(80);
+
+server.listen(8081);
 let userid = 1;
 let roomNumber = 1;
 const playerQueue = new Queue();
@@ -17,12 +18,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
    res.send('root');
 });
-
-const getRandomImageNumber = () => {
-  const min = 1;
-  const max = 600;
-  return Math.floor(Math.random() * (max - min)) + min;
-};
 
 const getImage= (imageNumber, callback) => {
   const connection = mysql.createConnection(config.AWS_DB);
@@ -47,7 +42,7 @@ io.on('connection', (socket) => {
    });
 
    socket.on('answerMatchEvent', (data) => {
-      image = getRandomImageNumber();
+      image++;
       getImage(image, (err, results) => {
          socket.emit('newImageEvent', results);
          opponent.socket.emit('newImageEvent', results);
