@@ -1,18 +1,22 @@
-const socket = io.connect('http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/');
+const socket = io.connect('localhost');
 //'http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/'
 let username;
 let opponent;
 let sessionRoomNumber;
-let answers = [];
 let room;
 
 class Room extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      username: '',
       imageURL: '',
       submittedWords: [],
     }
+  }
+
+  initialiseRoom(username, imageURL) {
+    this.setState({ username, imageURL, submittedWords: [] });
   }
 
   changeImage(imageURL) {
@@ -37,9 +41,11 @@ class Room extends React.Component {
 
   submitWord(event) {
     event.preventDefault();
-    let word = document.getElementById('inputBox').value;
+    let word = document.getElementById('inputBox').value.toLowerCase();
     document.getElementById('inputBox').value = '';
-    answer(word);
+    if(/^[a-zA-Z]+$/.test(word)) {
+      answer(word);
+    }
   }
 
   render() {
@@ -47,6 +53,9 @@ class Room extends React.Component {
       <div>
         <div className="title">
           <span><b>Photo-tagging</b></span>
+        </div>
+        <div className="username">
+          Username: {this.state.username}
         </div>
         <br/>
         <div className="photo">
@@ -78,7 +87,7 @@ document.getElementById('findRoom').style.display = 'none';
 room = ReactDOM.render(<Room/>,
   document.getElementById('game-container'));
   console.log(data);
-  room.changeImage(data.webformatURL);
+  room.initialiseRoom(username, data.webformatURL);
 });
 
 const answer = (result) => {
