@@ -1,4 +1,4 @@
-const socket = io.connect('localhost');
+const socket = io.connect('http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/');
 //'http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/'
 let username;
 let opponent;
