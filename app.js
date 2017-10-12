@@ -6,7 +6,6 @@ const server = require('http').Server(app);
 const config = require('./config.json');
 const io = require('socket.io')(server);
 const Queue = require('./Queue.src');
-
 server.listen(8081);
 let userid = 1;
 let roomNumber = 1;
@@ -19,6 +18,13 @@ app.get('/', (req, res) => {
    res.send('root');
 });
 
+const getRandomImageNumber = () => {
+  const min = 1;
+  const max = 600;
+  return Math.floor(Math.random() * (max - min)) + min;
+};
+
+// queries the database for url of image with id = imageNumber
 const getImage= (imageNumber, callback) => {
   const connection = mysql.createConnection(config.AWS_DB);
   connection.connect();
@@ -34,7 +40,7 @@ const getImage= (imageNumber, callback) => {
 io.on('connection', (socket) => {
    let sessionRoomNumber;
    let opponent;
-   let image = 2;
+   let image = 1;
 
    socket.on(`answerEvent`, (data) => {
       opponent.socket.emit('opponentAnswerEvent', {answer: data.answer, username: data.username});
@@ -42,7 +48,7 @@ io.on('connection', (socket) => {
    });
 
    socket.on('answerMatchEvent', (data) => {
-      image++;
+      image = getRandomImageNumber();
       getImage(image, (err, results) => {
          socket.emit('newImageEvent', results);
          opponent.socket.emit('newImageEvent', results);
@@ -60,10 +66,9 @@ io.on('connection', (socket) => {
       });
    });
 
-
-
    socket.on('findRoomEvent', (data) => {
       userid++;
+      // if queue is not empty, dequeue, save as opponent and emit roomFoundEvent to opponent socket and this socket
       if (playerQueue.getLength() > 0) {
          sessionRoomNumber = roomNumber;
          roomNumber++;
@@ -71,6 +76,7 @@ io.on('connection', (socket) => {
          opponentSockets[opponent.username] = {socket: socket, username: data.username};
          opponent.socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: data.username});
          socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: opponent.username});
+      // else queue this socket
       } else {
          playerQueue.enqueue({socket: socket, username: data.username});
       }
