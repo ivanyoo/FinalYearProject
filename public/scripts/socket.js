@@ -7,6 +7,7 @@ let room;
 
 class Room extends React.Component {
   constructor(props) {
+    // store username, imageURL and submittedWords in component's state
     super(props);
     this.state = {
       username: '',
@@ -15,10 +16,12 @@ class Room extends React.Component {
     }
   }
 
+  // sets username, initial Image URL and refreshes component
   initialiseRoom(username, imageURL) {
     this.setState({ username, imageURL, submittedWords: [] });
   }
 
+  // changes the imageURL in the state and resets submittedWords
   changeImage(imageURL) {
     this.setState({ imageURL, submittedWords: [] });
   }
@@ -27,6 +30,7 @@ class Room extends React.Component {
     return this.state.submittedWords;
   }
 
+  // adds word to submittedWords in state
   addSubmittedWord(word) {
     let submittedWords = this.state.submittedWords;
     if (!submittedWords.includes(word)) {
@@ -35,10 +39,7 @@ class Room extends React.Component {
     }
   }
 
-  refreshSubmittedWords() {
-    this.setState({ submittedWords: [] });
-  }
-
+  // checks if user input only contains letters and calls answer
   submitWord(event) {
     event.preventDefault();
     let word = document.getElementById('inputBox').value.toLowerCase();
@@ -81,15 +82,15 @@ class Room extends React.Component {
   }
 }
 
+// initialises React component and displays the game
 socket.on('roomJoinedEvent', (data) => {
-  console.log('Joined room');
-document.getElementById('findRoom').style.display = 'none';
-room = ReactDOM.render(<Room/>,
+  document.getElementById('findRoom').style.display = 'none';
+  room = ReactDOM.render(<Room/>,
   document.getElementById('game-container'));
-  console.log(data);
   room.initialiseRoom(username, data.webformatURL);
 });
 
+// sends an answer event to main app
 const answer = (result) => {
   console.log(sessionRoomNumber);
   room.addSubmittedWord(result);
@@ -98,8 +99,8 @@ const answer = (result) => {
 
 socket.on('roomFoundEvent', (data) => {
   socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username});
-sessionRoomNumber = data.sessionRoomNumber;
-opponent = data.opponent;
+  sessionRoomNumber = data.sessionRoomNumber;
+  opponent = data.opponent;
 });
 
 socket.on('newImageEvent', (data) => {
@@ -108,15 +109,15 @@ socket.on('newImageEvent', (data) => {
 
 socket.on('opponentAnswerEvent', (data) => {
   console.log(data);
-if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
-  socket.emit('answerMatchEvent');
-}
+  if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
+    socket.emit('answerMatchEvent');
+  }
 });
 
 socket.on('finishGameEvent', (data) => {
   console.log('!');
-document.getElementById('game').style.display = 'none';
-document.getElementById('result').style.display = 'block';
+  document.getElementById('game').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
 });
 
 const joinRoom = () => {

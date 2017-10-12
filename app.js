@@ -24,6 +24,7 @@ const getRandomImageNumber = () => {
   return Math.floor(Math.random() * (max - min)) + min;
 };
 
+// queries the database for url of image with id = imageNumber
 const getImage= (imageNumber, callback) => {
   const connection = mysql.createConnection(config.AWS_DB);
   connection.connect();
@@ -65,10 +66,9 @@ io.on('connection', (socket) => {
       });
    });
 
-
-
    socket.on('findRoomEvent', (data) => {
       userid++;
+      // if queue is not empty, dequeue, save as opponent and emit roomFoundEvent to opponent socket and this socket
       if (playerQueue.getLength() > 0) {
          sessionRoomNumber = roomNumber;
          roomNumber++;
@@ -76,6 +76,7 @@ io.on('connection', (socket) => {
          opponentSockets[opponent.username] = {socket: socket, username: data.username};
          opponent.socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: data.username});
          socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: opponent.username});
+      // else queue this socket
       } else {
          playerQueue.enqueue({socket: socket, username: data.username});
       }
