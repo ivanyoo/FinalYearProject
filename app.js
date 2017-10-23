@@ -1,22 +1,53 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
+const bodyParser = require('body-parser');
+const passwordHash = require('password-hash');
 const app = require('express')();
 const path = require('path');
 const server = require('http').Server(app);
 const config = require('./config.json');
 const io = require('socket.io')(server);
 const Queue = require('./Queue.src');
-server.listen(8081);
+server.listen(80);
 let userid = 1;
 let roomNumber = 1;
 const playerQueue = new Queue();
 const opponentSockets = {};
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get('/', (req, res) => {
    res.send('root');
 });
+
+app.post('/login', (req, res) => {
+  const connection = mysql.createConnection(config.AWS_DB);
+  connection.connect();
+  connection.query('SELECT hashedPassword FROM users WHERE username = ?', [req.body.username], (err, results) => {
+    if (err) {
+       console.log(err);
+    }
+    if (!results[0]) {
+       connection.query('INSERT INTO users (username, hashedPassword) VALUES (?,?)', [req.body.username, passwordHash.generate(req.body.password)], (error, response) => {
+          connection.end();
+          if (error) {
+             console.log(error);
+          }
+          res.json({error: null});
+       });
+    } else {
+       connection.end();
+       if (passwordHash.verify(req.body.password, results[0].hashedPassword)) {
+         res.json({ error: null });
+       } else {
+         res.json({ error: 'Wrong password'});
+       }
+    }
+  });
+});
+
 
 const getRandomImageNumber = () => {
   const min = 1;
@@ -37,8 +68,23 @@ const getImage= (imageNumber, callback) => {
   });
 };
 
+const updateScore = (player, opponent, score, callback) => {
+  const connection = mysql.createConnection(config.AWS_DB);
+  connection.connect();
+  connection.query('UPDATE users SET totalPoints = totalPoints + ? WHERE username IN (?, ?)',[score, player, opponent], (err, results) => {
+    connection.end();
+    if (err) {
+      console.log(err);
+      return callback(err);
+    }
+    callback(null);
+  });
+};
+
+
 io.on('connection', (socket) => {
    let sessionRoomNumber;
+   let username;
    let opponent;
    let image = 1;
 
@@ -48,10 +94,12 @@ io.on('connection', (socket) => {
    });
 
    socket.on('answerMatchEvent', (data) => {
-      image = getRandomImageNumber();
-      getImage(image, (err, results) => {
-         socket.emit('newImageEvent', results);
-         opponent.socket.emit('newImageEvent', results);
+      updateScore(username, opponent.username, data.points , (err) => {
+        image = getRandomImageNumber();
+        getImage(image, (err, results) => {
+          socket.emit('newImageEvent', results);
+          opponent.socket.emit('newImageEvent', results);
+        });
       });
    });
 
@@ -67,7 +115,7 @@ io.on('connection', (socket) => {
    });
 
    socket.on('findRoomEvent', (data) => {
-      userid++;
+      username = data.username;
       // if queue is not empty, dequeue, save as opponent and emit roomFoundEvent to opponent socket and this socket
       if (playerQueue.getLength() > 0) {
          sessionRoomNumber = roomNumber;

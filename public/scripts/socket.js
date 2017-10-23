@@ -1,5 +1,5 @@
-const socket = io.connect('http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/');
 //'http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/'
+const socket = io.connect('localhost');
 let username;
 let opponent;
 let sessionRoomNumber;
@@ -13,6 +13,7 @@ class Room extends React.Component {
       username: '',
       imageURL: '',
       submittedWords: [],
+      score: 0,
     }
   }
 
@@ -21,9 +22,9 @@ class Room extends React.Component {
     this.setState({ username, imageURL, submittedWords: [] });
   }
 
-  // changes the imageURL in the state and resets submittedWords
+  // changes the imageURL in the state and resets submittedWords and adds score
   changeImage(imageURL) {
-    this.setState({ imageURL, submittedWords: [] });
+    this.setState({ imageURL, submittedWords: [], score: this.state.score += 100 });
   }
 
   getSubmittedWords() {
@@ -58,6 +59,9 @@ class Room extends React.Component {
         <div className="username">
           Username: {this.state.username}
         </div>
+        <div>
+          Score: {this.state.score}
+        </div>
         <br/>
         <div className="photo">
           <img src={this.state.imageURL} />
@@ -82,13 +86,28 @@ class Room extends React.Component {
   }
 }
 
-// initialises React component and displays the game
-socket.on('roomJoinedEvent', (data) => {
-  document.getElementById('findRoom').style.display = 'none';
-  room = ReactDOM.render(<Room/>,
-  document.getElementById('game-container'));
-  room.initialiseRoom(username, data.webformatURL);
-});
+
+class LoginForm extends React.Component {
+  submitForm(event) {
+    event.preventDefault();
+    joinRoom();
+  }
+
+  render() {
+    return (<div>
+      <form onSubmit={this.submitForm}>
+      Username: <input type="text" id="username" />
+      <br/>
+      Password: <input type="password" id="password" />
+      <br/>
+      <input type="submit" value="Login / Register"/>
+      </form>
+      <p id="login-message"></p>
+    </div>)
+  }
+}
+
+const loginform = ReactDOM.render(<LoginForm/>, document.getElementById('joinRoom'));
 
 // sends an answer event to main app
 const answer = (result) => {
@@ -96,6 +115,32 @@ const answer = (result) => {
   room.addSubmittedWord(result);
   socket.emit(`answerEvent`, {answer: result, username: username});
 };
+
+const joinRoom = () => {
+  username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  $.post('/login', {
+    username: username,
+    password: password
+  }).done((result) => {
+    if (result.error) {
+      document.getElementById('login-message').outerHTML = `<p id="login-message"}>${result.error}</p>`;
+    } else {
+      document.getElementById('joinRoom').style.display = 'none';
+      document.getElementById('findRoom').style.display = 'block';
+      socket.emit('findRoomEvent', {username: username});
+    }
+  });
+};
+
+
+// initialises React component and displays the game
+socket.on('roomJoinedEvent', (data) => {
+  document.getElementById('findRoom').style.display = 'none';
+  room = ReactDOM.render(<Room/>,
+    document.getElementById('game-container'));
+  room.initialiseRoom(username, data.webformatURL);
+});
 
 socket.on('roomFoundEvent', (data) => {
   socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username});
@@ -110,7 +155,7 @@ socket.on('newImageEvent', (data) => {
 socket.on('opponentAnswerEvent', (data) => {
   console.log(data);
   if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
-    socket.emit('answerMatchEvent');
+    socket.emit('answerMatchEvent', { points: 100 });
   }
 });
 
@@ -120,9 +165,3 @@ socket.on('finishGameEvent', (data) => {
   document.getElementById('result').style.display = 'block';
 });
 
-const joinRoom = () => {
-  document.getElementById('joinRoom').style.display = 'none';
-  document.getElementById('findRoom').style.display = 'block';
-  username = document.getElementById('username').value;
-  socket.emit('findRoomEvent', {username: username});
-};
