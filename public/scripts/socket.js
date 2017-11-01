@@ -4,6 +4,7 @@ let username;
 let opponent;
 let sessionRoomNumber;
 let room;
+let mode;
 
 class Room extends React.Component {
   constructor(props) {
@@ -19,6 +20,7 @@ class Room extends React.Component {
 
   // sets username, initial Image URL and refreshes component
   initialiseRoom(username, imageURL) {
+    console.log(imageURL);
     this.setState({ username, imageURL, submittedWords: [] });
   }
 
@@ -50,11 +52,21 @@ class Room extends React.Component {
     }
   }
 
+  getGameMode() {
+    if (mode == 1) {
+      return 'Adjectives Only';
+    }
+    return 'Classic';
+  }
+
   render() {
     return(
       <div>
         <div className="title">
           <span><b>Photo-tagging</b></span>
+        </div>
+        <div className="gameMode">
+          Game Mode:  {this.getGameMode()}
         </div>
         <div className="username">
           Username: {this.state.username}
@@ -115,7 +127,8 @@ const answer = (result) => {
 };
 
 const pickGameMode = (gameMode) => {
-  document.getElementById('lobby').outerHTML = `<p id="lobby"}>Finding Room</p>`
+  document.getElementById('lobby').outerHTML = `<p id="lobby"}>Finding Room</p>`;
+  mode = gameMode;
   socket.emit('findRoomEvent', {username: username, gameMode});
 };
 
@@ -148,7 +161,7 @@ socket.on('roomJoinedEvent', (data) => {
   document.getElementById('lobby').style.display = 'none';
   room = ReactDOM.render(<Room/>,
     document.getElementById('game-container'));
-  room.initialiseRoom(username, data.webformatURL);
+  room.initialiseRoom(username, data);
 });
 
 socket.on('roomFoundEvent', (data) => {
@@ -158,7 +171,7 @@ socket.on('roomFoundEvent', (data) => {
 });
 
 socket.on('newImageEvent', (data) => {
-  room.changeImage(data.webformatURL);
+  room.changeImage(data);
 });
 
 socket.on('verifiedAnswerEvent', (data) => {
@@ -166,7 +179,7 @@ socket.on('verifiedAnswerEvent', (data) => {
   if (data.username == username) {
     room.addSubmittedWord(data.answer)
   } else if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
-    socket.emit('answerMatchEvent', { points: 100 });
+    socket.emit('answerMatchEvent', { answer: data.answer, points: 100 });
   }
 });
 

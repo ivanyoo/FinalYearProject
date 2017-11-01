@@ -59,15 +59,7 @@ const getRandomImageNumber = () => {
 
 // queries the database for url of image with id = imageNumber
 const getImage= (imageNumber, callback) => {
-  const connection = mysql.createConnection(config.AWS_DB);
-  connection.connect();
-  connection.query('SELECT webformatURL, tags FROM pixabay_images WHERE id = ?', [imageNumber], (err, results) => {
-     connection.end();
-     if (err) {
-        return callback(err);
-     }
-     callback(null, results[0]);
-  });
+  return callback(null, `https://s3-eu-west-1.amazonaws.com/114344211.photo-tagging/pixabay_images/${imageNumber}.jpg`);
 };
 
 const updateScore = (player, opponent, score, callback) => {
