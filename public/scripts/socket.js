@@ -4,6 +4,7 @@ let username;
 let opponent;
 let sessionRoomNumber;
 let room;
+let mode;
 
 class Room extends React.Component {
   constructor(props) {
@@ -19,6 +20,7 @@ class Room extends React.Component {
 
   // sets username, initial Image URL and refreshes component
   initialiseRoom(username, imageURL) {
+    console.log(imageURL);
     this.setState({ username, imageURL, submittedWords: [] });
   }
 
@@ -50,11 +52,21 @@ class Room extends React.Component {
     }
   }
 
+  getGameMode() {
+    if (mode == 1) {
+      return 'Adjectives Only';
+    }
+    return 'Classic';
+  }
+
   render() {
     return(
       <div>
         <div className="title">
           <span><b>Photo-tagging</b></span>
+        </div>
+        <div className="gameMode">
+          Game Mode:  {this.getGameMode()}
         </div>
         <div className="username">
           Username: {this.state.username}
@@ -111,35 +123,45 @@ const loginform = ReactDOM.render(<LoginForm/>, document.getElementById('joinRoo
 
 // sends an answer event to main app
 const answer = (result) => {
-  console.log(sessionRoomNumber);
-  room.addSubmittedWord(result);
   socket.emit(`answerEvent`, {answer: result, username: username});
 };
 
+const pickGameMode = (gameMode) => {
+  document.getElementById('lobby').outerHTML = `<p id="lobby"}>Finding Room</p>`;
+  mode = gameMode;
+  socket.emit('findRoomEvent', {username: username, gameMode});
+};
+
 const joinRoom = () => {
-  username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
-  $.post('/login', {
-    username: username,
-    password: password
-  }).done((result) => {
-    if (result.error) {
-      document.getElementById('login-message').outerHTML = `<p id="login-message"}>${result.error}</p>`;
-    } else {
-      document.getElementById('joinRoom').style.display = 'none';
-      document.getElementById('findRoom').style.display = 'block';
-      socket.emit('findRoomEvent', {username: username});
-    }
-  });
+  if (document.getElementById('username').value.length > 0) {
+    username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    $.post('/login', {
+      username: username,
+      password: password
+    }).done((result) => {
+      if (result.error) {
+        document.getElementById('login-message').outerHTML = `<p id="login-message"}>${result.error}</p>`;
+      } else {
+        document.getElementById('joinRoom').style.display = 'none';
+        document.getElementById('lobby').outerHTML = `<div id="lobby">
+            <button onClick="pickGameMode(0)">Classic</button>
+            <button onClick="pickGameMode(1)">Adjectives only</button>
+        </div>`;
+      }
+    });
+  } else {
+    document.getElementById('login-message').outerHTML = `<p id="login-message"}>Please enter a username and password</p>`;
+  }
 };
 
 
 // initialises React component and displays the game
 socket.on('roomJoinedEvent', (data) => {
-  document.getElementById('findRoom').style.display = 'none';
+  document.getElementById('lobby').style.display = 'none';
   room = ReactDOM.render(<Room/>,
     document.getElementById('game-container'));
-  room.initialiseRoom(username, data.webformatURL);
+  room.initialiseRoom(username, data);
 });
 
 socket.on('roomFoundEvent', (data) => {
@@ -149,13 +171,15 @@ socket.on('roomFoundEvent', (data) => {
 });
 
 socket.on('newImageEvent', (data) => {
-  room.changeImage(data.webformatURL);
+  room.changeImage(data);
 });
 
-socket.on('opponentAnswerEvent', (data) => {
+socket.on('verifiedAnswerEvent', (data) => {
   console.log(data);
-  if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
-    socket.emit('answerMatchEvent', { points: 100 });
+  if (data.username == username) {
+    room.addSubmittedWord(data.answer)
+  } else if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
+    socket.emit('answerMatchEvent', { answer: data.answer, points: 100 });
   }
 });
 
