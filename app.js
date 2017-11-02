@@ -75,6 +75,19 @@ const updateScore = (player, opponent, score, callback) => {
   });
 };
 
+const upsertOccurence = (imageID, word, callback) => {
+  const connection = mysql.createConnection(config.AWS_DB);
+  connection.connect();
+  connection.query('INSERT INTO occurences (imageID, word, noOfOccurences) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE noOfOccurences = noOfOccurences + 1', [imageID, word], (err, results) =>{
+    connection.end();
+    if (err) {
+      console.log(err);
+      return callback(err);
+    }
+    callback(null);
+  });
+};
+
 
 io.on('connection', (socket) => {
    let sessionRoomNumber;
@@ -102,11 +115,13 @@ io.on('connection', (socket) => {
    });
 
    socket.on('answerMatchEvent', (data) => {
-      updateScore(username, opponent.username, data.points , (err) => {
-        image = getRandomImageNumber();
-        getImage(image, (err, results) => {
-          socket.emit('newImageEvent', results);
-          opponent.socket.emit('newImageEvent', results);
+      upsertOccurence(image, data.answer, (error) => {
+        updateScore(username, opponent.username, data.points , (err) => {
+          image = getRandomImageNumber();
+          getImage(image, (err, results) => {
+            socket.emit('newImageEvent', results);
+            opponent.socket.emit('newImageEvent', results);
+          });
         });
       });
    });
