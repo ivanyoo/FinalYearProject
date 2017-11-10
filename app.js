@@ -138,7 +138,8 @@ io.on('connection', (socket) => {
    });
 
    socket.on('findRoomEvent', (data) => {
-      gameMode = parseInt(data.gameMode);
+      console.log(data.gameSettings);
+      gameMode = parseInt(data.gameSettings.mode);
       username = data.username;
       // if queue is not empty, dequeue, save as opponent and emit roomFoundEvent to opponent socket and this socket
       if (gameModeQueues[gameMode].getLength() > 0) {

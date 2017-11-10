@@ -98,6 +98,59 @@ class Room extends React.Component {
   }
 }
 
+class GameMaker extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      timer: 90,
+      mode: 0,
+      taboowords: false,
+      noOfPlayers: 2
+    }
+  }
+
+  changeMode(mode){
+    if (mode !== this.state.mode) {
+      this.setState({mode: mode});
+    }
+  }
+
+  changeTime(){
+    this.setState({timer: document.getElementById('timer').value});
+  }
+
+  changeTabooWords() {
+    this.setState({taboowords: !this.state.taboowords});
+  }
+
+  changeNoOfPlayers() {
+    this.setState({noOfPlayers: document.getElementById('numplayers').value});
+  }
+
+  submitForm() {
+    sendGameSettings(this.state);
+  }
+
+  render() {
+    return (<div id="lobby">
+      Game Mode:
+      <button onClick={() => this.changeMode(0)}>Classic</button>
+      <button onClick={() => this.changeMode(1)}>Adjectives only</button>
+      <br/>
+      Timer:
+      <input id="timer" type="number" value={this.state.timer} onChange={() => {this.changeTime()}} />
+      <br />
+      Taboo words:
+      <input type="checkbox" id="taboowords" onChange={() => {this.changeTabooWords()}} />
+      <br />
+      Number of Players:
+      <input id="numplayers" value={this.state.noOfPlayers} type="number" min="1" max="10" onChange={() => {this.changeNoOfPlayers()}}/>
+      <br />
+      <button onClick={()=> {this.submitForm()}}>Submit</button>
+    </div>);
+  }
+}
+
 
 class LoginForm extends React.Component {
   submitForm(event) {
@@ -115,7 +168,7 @@ class LoginForm extends React.Component {
       <input type="submit" value="Login / Register"/>
       </form>
       <p id="login-message"></p>
-    </div>)
+    </div>);
   }
 }
 
@@ -126,10 +179,9 @@ const answer = (result) => {
   socket.emit(`answerEvent`, {answer: result, username: username});
 };
 
-const pickGameMode = (gameMode) => {
+const sendGameSettings = (gameSettings) => {
   document.getElementById('lobby').outerHTML = `<p id="lobby"}>Finding Room</p>`;
-  mode = gameMode;
-  socket.emit('findRoomEvent', {username: username, gameMode});
+  socket.emit('findRoomEvent', {username: username, gameSettings: gameSettings});
 };
 
 const joinRoom = () => {
@@ -144,10 +196,7 @@ const joinRoom = () => {
         document.getElementById('login-message').outerHTML = `<p id="login-message"}>${result.error}</p>`;
       } else {
         document.getElementById('joinRoom').style.display = 'none';
-        document.getElementById('lobby').outerHTML = `<div id="lobby">
-            <button onClick="pickGameMode(0)">Classic</button>
-            <button onClick="pickGameMode(1)">Adjectives only</button>
-        </div>`;
+        ReactDOM.render(<GameMaker/>, document.getElementById('lobby'));
       }
     });
   } else {
