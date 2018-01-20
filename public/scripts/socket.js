@@ -133,20 +133,31 @@ class GameMaker extends React.Component {
 
   render() {
     return (<div id="lobby">
-      Game Mode:
-      <button onClick={() => this.changeMode(0)}>Classic</button>
-      <button onClick={() => this.changeMode(1)}>Adjectives only</button>
-      <br/>
-      Timer:
-      <input id="timer" type="number" value={this.state.timer} onChange={() => {this.changeTime()}} />
-      <br />
-      Taboo words:
-      <input type="checkbox" id="taboowords" onChange={() => {this.changeTabooWords()}} />
-      <br />
-      Number of Players:
-      <input id="numplayers" value={this.state.noOfPlayers} type="number" min="1" max="10" onChange={() => {this.changeNoOfPlayers()}}/>
-      <br />
-      <button onClick={()=> {this.submitForm()}}>Submit</button>
+      <div>
+        Game Mode:
+        <br />
+        <button className="btn btn-default" onClick={() => this.changeMode(0)}>Classic</button>
+        <button className="btn btn-default" onClick={() => this.changeMode(1)}>Adjectives only</button>
+        <br/>
+      </div>
+      <div>
+        Timer:
+        <input className="form-control" id="timer" type="number" value={this.state.timer} onChange={() => {this.changeTime()}} />
+        <br />
+      </div>
+      <div>
+        Taboo words:
+        <input className="form-control" type="checkbox" id="taboowords" onChange={() => {this.changeTabooWords()}} />
+        <br />
+      </div>
+      <div>
+        Number of Players:
+        <input className="form-control" id="numplayers" value={this.state.noOfPlayers} type="number" min="1" max="10" onChange={() => {this.changeNoOfPlayers()}}/>
+        <br />
+      </div>
+      <div>
+        <button className="btn btn-default" onClick={()=> {this.submitForm()}}>Submit</button>
+      </div>
     </div>);
   }
 }
@@ -161,11 +172,13 @@ class LoginForm extends React.Component {
   render() {
     return (<div>
       <form onSubmit={this.submitForm}>
-      Username: <input type="text" id="username" />
+        <p>Username: </p>
+        <input type="text" className="form-control" id="username" />
       <br/>
-      Password: <input type="password" id="password" />
+        <p>Password: </p>
+        <input type="password" className="form-control" id="password" />
       <br/>
-      <input type="submit" value="Login / Register"/>
+      <input type="submit"  className="btn btn-default" value="Login / Register"/>
       </form>
       <p id="login-message"></p>
     </div>);
@@ -180,7 +193,7 @@ const answer = (result) => {
 };
 
 const sendGameSettings = (gameSettings) => {
-  document.getElementById('lobby').outerHTML = `<p id="lobby"}>Finding Room</p>`;
+  document.getElementById('lobbyContainer').outerHTML = `<p id="lobbyContainer"}>Finding Room</p>`;
   socket.emit('findRoomEvent', {username: username, gameSettings: gameSettings});
 };
 
@@ -196,7 +209,7 @@ const joinRoom = () => {
         document.getElementById('login-message').outerHTML = `<p id="login-message"}>${result.error}</p>`;
       } else {
         document.getElementById('joinRoom').style.display = 'none';
-        ReactDOM.render(<GameMaker/>, document.getElementById('lobby'));
+        ReactDOM.render(<GameMaker/>, document.getElementById('lobbyContainer'));
       }
     });
   } else {
@@ -207,7 +220,7 @@ const joinRoom = () => {
 
 // initialises React component and displays the game
 socket.on('roomJoinedEvent', (data) => {
-  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('lobbyContainer').style.display = 'none';
   room = ReactDOM.render(<Room/>,
     document.getElementById('game-container'));
   room.initialiseRoom(username, data);
