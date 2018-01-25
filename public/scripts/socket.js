@@ -59,39 +59,45 @@ class Room extends React.Component {
     return 'Classic';
   }
 
+  getSubmittedWordsList() {
+    return <div>
+      {this.state.submittedWords.map((word) => {
+        var width = word.length * 10 + "px";
+        var divWidth = 20 + word.length * 10 + "px";
+        return (<div style={{width: divWidth}} className="word"><p style={{width: width, margin: "auto"}}>{word}</p></div>);
+      })}
+    </div>;
+  }
+
   render() {
     return(
       <div>
-        <div className="title">
-          <span><b>Photo-tagging</b></span>
-        </div>
-        <div className="gameMode">
-          Game Mode:  {this.getGameMode()}
-        </div>
-        <div className="username">
-          Username: {this.state.username}
-        </div>
-        <div>
-          Score: {this.state.score}
-        </div>
-        <br/>
-        <div className="photo">
-          <img src={this.state.imageURL} />
-        </div>
-        <br />
-        <div>
-          Submit words that describe the image:
-        </div>
-        <br />
-        <div className="inputBox">
-          <form  onSubmit={(event) => this.submitWord(event)}>
-            <input id="inputBox" type="text" />
-          </form>
-        </div>
-        <div>
-          Your words so far:
+        <div id="game">
+          <div id="description">
+            <span>Game Mode:  {this.getGameMode()}</span>
+            <span>Username: {this.state.username}</span>
+            <span>Score: {this.state.score}</span>
+          </div>
+          <div id="photo">
+            <img src={this.state.imageURL} />
+          </div>
           <br />
-          {this.state.submittedWords.join(' ')}
+          <div>
+            <p id="submitText">Submit words that describe the image:</p>
+          </div>
+          <br />
+          <div className="inputBox">
+            <form  onSubmit={(event) => this.submitWord(event)}>
+              <input id="inputBox" className="form-control" type="text" />
+            </form>
+          </div>
+        </div>
+        <div>
+          <div>
+            <span id="current-words">Your words so far: </span>
+            <br />
+            {this.getSubmittedWordsList()}
+          </div>
         </div>
       </div>
     )

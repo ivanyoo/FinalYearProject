@@ -17,6 +17,58 @@ body {
     padding-bottom: 30px;
 }
 
+#game {
+    border-radius: 25px;
+    position:absolute;
+    background-color: white;
+    width: 800px;
+    height: 800px;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    padding-top: 30px;
+    padding-bottom: 30px;
+}
+
+#photo img{
+    display: block;
+    margin: auto;
+}
+
+#photo {
+    width: 640px;
+    height: 640px;
+}
+
+#submitText {
+    width: 400px;
+}
+
+#description {
+    width: 400px;
+}
+
+.inputBox {
+    width: 400px;
+}
+
+#game span {
+    padding-right: 10px;
+}
+
+#game * {
+    font-variant: small-caps;
+    font-family: Verdana;
+    margin: auto;
+}
+
+#current-words {
+    font-size: 2em;
+    color: yellow;
+}
+
 #lobby {
     border-radius: 25px;
     top: 0;
@@ -49,6 +101,15 @@ body {
     font-family: Verdana;
     width: 200px;
     margin: auto;
+}
+
+.word {
+    background-color: white;
+    font-family: Verdana;
+    font-variant: small-caps;
+    font-size: 1.25em;
+    margin-bottom: 10px;
+    border-radius: 10px;
 }
 
 #joinRoom p {
