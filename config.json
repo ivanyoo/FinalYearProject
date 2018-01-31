@@ -4,5 +4,6 @@
     "password": "CK4012018",
     "user": "photo-tagging",
     "database": "photo_tagging"
-  }
+  },
+  "VERIFIED_THRESHOLD" : 25
 }

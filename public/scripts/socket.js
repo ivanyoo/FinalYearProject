@@ -25,8 +25,8 @@ class Room extends React.Component {
   }
 
   // changes the imageURL in the state and resets submittedWords and adds score
-  changeImage(imageURL) {
-    this.setState({ imageURL, submittedWords: [], score: this.state.score += 100 });
+  changeImage(data) {
+    this.setState({imageURL: data.imageURL, submittedWords: [], score: this.state.score += data.score });
   }
 
   getSubmittedWords() {

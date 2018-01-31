@@ -9,6 +9,7 @@ const WORDPOS = require('wordpos');
 const server = require('http').Server(app);
 const config = require('./config.json');
 const io = require('socket.io')(server);
+const getScore = require('./dboperations');
 const Queue = require('./Queue.src');
 const wordpos = new WORDPOS();
 server.listen(80);
@@ -116,11 +117,13 @@ io.on('connection', (socket) => {
 
    socket.on('answerMatchEvent', (data) => {
       upsertOccurence(image, data.answer, (error) => {
-        updateScore(username, opponent.username, data.points , (err) => {
-          image = getRandomImageNumber();
-          getImage(image, (err, results) => {
-            socket.emit('newImageEvent', results);
-            opponent.socket.emit('newImageEvent', results);
+        getScore(data.answer, (score) => {
+          updateScore(username, opponent.username, score , (err) => {
+            image = getRandomImageNumber();
+            getImage(image, (err, results) => {
+              socket.emit('newImageEvent', {imageURL: results, score: score});
+              opponent.socket.emit('newImageEvent', {imageURL: results, score: score});
+            });
           });
         });
       });
