@@ -116,7 +116,9 @@ io.on('connection', (socket) => {
    });
 
    socket.on('answerMatchEvent', (data) => {
-      upsertOccurence(image, data.answer, (error) => {
+     socket.emit('renderWaitEvent', {answer: data.answer});
+     opponent.socket.emit('renderWaitEvent', {answer: data.answer});
+     upsertOccurence(image, data.answer, (error) => {
         getScore(data.answer, (score) => {
           updateScore(username, opponent.username, score , (err) => {
             image = getRandomImageNumber();

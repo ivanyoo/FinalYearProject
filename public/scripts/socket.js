@@ -15,7 +15,12 @@ class Room extends React.Component {
       imageURL: '',
       submittedWords: [],
       score: 0,
+      renderWait: false,
+      matchedWord: '',
+      timer: 5,
+      interval: null
     }
+    this.timer = this.timer.bind(this);
   }
 
   // sets username, initial Image URL and refreshes component
@@ -24,9 +29,19 @@ class Room extends React.Component {
     this.setState({ username, imageURL, submittedWords: [] });
   }
 
+  timer() {
+    if (this.state.timer > 0) {
+      this.setState({timer: this.state.timer - 1});
+      setTimeout(room.timer, 1000);
+    } else {
+      this.setState({renderWait: false, imageURL: this.state.data.imageURL, submittedWords: [] });
+    }
+  }
+
   // changes the imageURL in the state and resets submittedWords and adds score
   changeImage(data) {
-    this.setState({imageURL: data.imageURL, submittedWords: [], score: this.state.score += data.score });
+    this.setState({renderWait: 'wait', timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score});
+    setTimeout(this.timer, 1000);
   }
 
   getSubmittedWords() {
@@ -69,10 +84,27 @@ class Room extends React.Component {
     </div>;
   }
 
+  renderWaitForScore(word) {
+    this.setState({matchedWord: word, renderWait: true});
+  }
+
+  waitForScore(){
+    if (this.state.renderWait == true) {
+      return (<p>You matched with the word {this.state.matchedWord} <br/> Please wait while we calculate your score.</p>);
+    } else if (this.state.renderWait == 'wait') {
+      return (<p>You scored {this.state.scoredPoints} points with {this.state.matchedWord} <br/> A new image will appear in {this.state.timer} seconds.</p>);
+    } else {
+      return '';
+    }
+  }
+
   render() {
     return(
       <div>
         <div id="game">
+          <div id="waitForScore">
+            {this.waitForScore()}
+            </div>
           <div id="description">
             <span>Game Mode:  {this.getGameMode()}</span>
             <span>Username: {this.state.username}</span>
@@ -242,12 +274,16 @@ socket.on('newImageEvent', (data) => {
   room.changeImage(data);
 });
 
+socket.on('renderWaitEvent', (data) => {
+  room.renderWaitForScore(data.answer);
+});
+
 socket.on('verifiedAnswerEvent', (data) => {
   console.log(data);
   if (data.username == username) {
     room.addSubmittedWord(data.answer)
   } else if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
-    socket.emit('answerMatchEvent', { answer: data.answer, points: 100 });
+    socket.emit('answerMatchEvent', { answer: data.answer});
   }
 });
 
