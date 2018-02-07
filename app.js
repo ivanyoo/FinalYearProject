@@ -11,6 +11,7 @@ const config = require('./config.json');
 const io = require('socket.io')(server);
 const getScore = require('./dboperations');
 const Queue = require('./Queue.src');
+const stemmer = require('stemmer');
 const wordpos = new WORDPOS();
 server.listen(80);
 let userid = 1;
@@ -103,6 +104,14 @@ io.on('connection', (socket) => {
           if (result.length > 0) {
             opponent.socket.emit('verifiedAnswerEvent', {answer: data.answer, username: data.username});
             socket.emit('verifiedAnswerEvent', {answer: data.answer, username: data.username});
+          } else {
+            const stemmedWord = stemmer(data.answer);
+            wordpos.lookup(stemmedWord, (result) => {
+              if (result.length > 0) {
+                opponent.socket.emit('verifiedAnswerEvent', {answer: stemmedWord, username: data.username});
+                socket.emit('verifiedAnswerEvent', {answer: stemmedWord, username: data.username});
+              }
+            })
           }
         });
       } else if (gameMode == 1) {
@@ -132,14 +141,24 @@ io.on('connection', (socket) => {
    });
 
    socket.on('joinRoomEvent', (data) => {
-      socket.join(`testroom-${data.roomNumber}`);
       if (!opponent) {
          opponent = opponentSockets[gameMode][data.username];
          delete opponentSockets[gameMode][data.username];
       }
-      getImage(image, (err, results) => {
-        socket.emit('roomJoinedEvent', results);
-      });
+      socket.emit('roomJoinedEvent', data.imageURL);
+   });
+
+   socket.on('oneSkipEvent', (data) => {
+     socket.emit('opponentHasSkippedEvent', data);
+     opponent.socket.emit('opponentHasSkippedEvent', data);
+   });
+
+   socket.on('bothSkippedEvent', () => {
+     image = getRandomImageNumber();
+     getImage(image, (err, results) => {
+       socket.emit('skipImageEvent', {imageURL: results});
+       opponent.socket.emit('skipImageEvent', {imageURL: results});
+     });
    });
 
    socket.on('findRoomEvent', (data) => {
@@ -152,8 +171,11 @@ io.on('connection', (socket) => {
          roomNumber++;
          opponent = gameModeQueues[gameMode].dequeue();
          opponentSockets[gameMode][opponent.username] = {socket: socket, username: data.username};
-         opponent.socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: data.username});
-         socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: opponent.username});
+         image = getRandomImageNumber();
+         getImage(image, (err, results) => {
+           opponent.socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: data.username, imageURL: results});
+           socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: opponent.username, imageURL: results});
+         });
       // else queue this socket
       } else {
         gameModeQueues[gameMode].enqueue({socket: socket, username: data.username});

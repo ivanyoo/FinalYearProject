@@ -1,4 +1,4 @@
-//'http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/'
+//'http://phototagging.eu-west-1.elasticbeanstalk.com/'
 const socket = io.connect('localhost');
 let username;
 let opponent;
@@ -18,9 +18,11 @@ class Room extends React.Component {
       renderWait: false,
       matchedWord: '',
       timer: 5,
-      interval: null
+      interval: null,
+      opponentSkip: false
     }
     this.timer = this.timer.bind(this);
+    this.checkSkip = this.checkSkip.bind(this);
   }
 
   // sets username, initial Image URL and refreshes component
@@ -42,6 +44,10 @@ class Room extends React.Component {
   changeImage(data) {
     this.setState({renderWait: 'wait', timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score});
     setTimeout(this.timer, 1000);
+  }
+
+  changeImageWithoutScore(data) {
+    this.setState({submittedWords: [], imageURL: data.imageURL, opponentSkip: false, renderWait: false});
   }
 
   getSubmittedWords() {
@@ -98,6 +104,38 @@ class Room extends React.Component {
     }
   }
 
+  renderForm() {
+    if (this.state.renderWait == false) {
+      return (<div className="inputBox">
+        <form  onSubmit={(event) => this.submitWord(event)}>
+          <input id="inputBox" className="form-control" type="text" />
+        </form>
+      </div>);
+    } else {
+      return '';
+    }
+  }
+
+  opponentHasSkipped() {
+    this.setState({opponentSkip: true});
+  }
+
+  opponentSkip() {
+    if (this.state.opponentSkip) {
+      return (<p>Opponent wants to skip this word</p>);
+    } else {
+      return '';
+    }
+  }
+
+  checkSkip() {
+    if (this.state.opponentSkip) {
+      bothSkipped();
+    } else {
+      sendOneSkip(username)
+    }
+  }
+
   render() {
     return(
       <div>
@@ -115,14 +153,13 @@ class Room extends React.Component {
           </div>
           <br />
           <div>
-            <p id="submitText">Submit words that describe the image:</p>
+            {this.state.renderWait == false ? <p id="submitText">Submit words that describe the image:</p> : <p id="submitText"></p>}
           </div>
           <br />
-          <div className="inputBox">
-            <form  onSubmit={(event) => this.submitWord(event)}>
-              <input id="inputBox" className="form-control" type="text" />
-            </form>
-          </div>
+          {this.renderForm()}
+          <button onClick={this.checkSkip} id="skip" className="form-control">Skip word</button>
+          <br/>
+          {this.opponentSkip()}
         </div>
         <div>
           <div>
@@ -255,6 +292,14 @@ const joinRoom = () => {
   }
 };
 
+const sendOneSkip = (username) => {
+  socket.emit('oneSkipEvent', username);
+};
+
+const bothSkipped = () => {
+  socket.emit('bothSkippedEvent');
+};
+
 
 // initialises React component and displays the game
 socket.on('roomJoinedEvent', (data) => {
@@ -265,7 +310,7 @@ socket.on('roomJoinedEvent', (data) => {
 });
 
 socket.on('roomFoundEvent', (data) => {
-  socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username});
+  socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username, imageURL: data.imageURL});
   sessionRoomNumber = data.sessionRoomNumber;
   opponent = data.opponent;
 });
@@ -276,6 +321,16 @@ socket.on('newImageEvent', (data) => {
 
 socket.on('renderWaitEvent', (data) => {
   room.renderWaitForScore(data.answer);
+});
+
+socket.on('opponentHasSkippedEvent', (data) => {
+  if (data != username) {
+    room.opponentHasSkipped();
+  }
+});
+
+socket.on('skipImageEvent', (data) => {
+  room.changeImageWithoutScore(data);
 });
 
 socket.on('verifiedAnswerEvent', (data) => {

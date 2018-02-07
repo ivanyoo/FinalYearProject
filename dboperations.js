@@ -64,6 +64,8 @@ const getHyponyms = (word, callback) => {
     }
   });
 };
+
+
 const getHypernyms = (word, callback) => {
   var wordnetWord = new wn.Word(word);
   wordnetWord.getSynsets((err, data) => {
@@ -71,6 +73,7 @@ const getHypernyms = (word, callback) => {
       data[0].getHypernymsTree((err, result) => {
         if (result[0]) {
           async.eachLimit(result, 1, (synset, nextSynset) => {
+            console.log(result[0].hypernym[0].hypernym[0].hypernym[0].hypernym[0]);
             if (synset.hypernym.length > 0) {
               return callback([1]);
             }
@@ -105,6 +108,21 @@ const hasHyponyms = (word, callback) => {
     return callback(false);
   });
 };
+
+// const hasHypernyms = (word, callback) => {
+//   var wordnetWord = new wn.Word(word);
+//   wordnetWord.getSynsets((err, data) => {
+//     data.forEach(synset => {
+//       synset.getHypernyms((err, hypernym) => {
+//         if(hypernym[0]) {
+//           console.log(hypernym[0].words);
+//           return callback(true);
+//         }
+//         return callback(false);
+//       });
+//     });
+//   });
+// };
 
 const getScore = (word, callback) => {
   let hyponyms = false;
@@ -183,9 +201,14 @@ const getImageHypernyms = (imageId, callback) => {
 // getImageHypernyms(8, (word) => {
 //   console.log(word);
 // });
+// getHypernyms('thing', console.log)
 
 // getScore('cat', (score) => {
 //   console.log(score);
 // });
 
 module.exports = getScore;
+
+// hasHypernyms('thing', (result) => {
+//   console.log(result);
+// });
