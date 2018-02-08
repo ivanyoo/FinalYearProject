@@ -7,6 +7,24 @@ body {
 
 }
 
+#hintsContainer {
+    float: right;
+    margin-right: 30px;
+}
+
+#hints-title {
+    font-size: 2em;
+    color: yellow;
+}
+
+#skipWords {
+    width: 600px;
+    font-family: Verdana;
+    margin: auto;
+    font-size: 2em;
+    color: darkblue;
+}
+
 #joinRoom {
     border-radius: 25px;
     position:absolute;
@@ -26,8 +44,8 @@ body {
     border-radius: 25px;
     position:absolute;
     background-color: white;
-    width: 900px;
-    height: 900px;
+    width: 700px;
+    height: 700px;
     top: 0;
     bottom: 0;
     left: 0;
@@ -37,14 +55,15 @@ body {
     padding-bottom: 30px;
 }
 
-#photo img{
+#photo{
     display: block;
     margin: auto;
+    max-height: 100%;
 }
 
-#photo {
+#photoContainer {
     width: 640px;
-    height: 640px;
+    height: 480px;
 }
 
 #submitText {

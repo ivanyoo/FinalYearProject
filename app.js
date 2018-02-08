@@ -54,7 +54,7 @@ app.post('/login', (req, res) => {
 
 
 const getRandomImageNumber = () => {
-  const min = 1;
+  const min = 2;
   const max = 600;
   return Math.floor(Math.random() * (max - min)) + min;
 };
@@ -97,6 +97,9 @@ io.on('connection', (socket) => {
    let opponent;
    let gameMode;
    let image = 1;
+   let words = [];
+   let opponentWords = [];
+   let offsettedScore = 0;
 
    socket.on(`answerEvent`, (data) => {
       if (gameMode == 0) {
@@ -124,16 +127,24 @@ io.on('connection', (socket) => {
       }
    });
 
+   socket.on('opponentAnswerVerifiedEvent', (data) => {
+     opponentWords.push(data.answer);
+   });
+
    socket.on('answerMatchEvent', (data) => {
      socket.emit('renderWaitEvent', {answer: data.answer});
      opponent.socket.emit('renderWaitEvent', {answer: data.answer});
      upsertOccurence(image, data.answer, (error) => {
         getScore(data.answer, (score) => {
-          updateScore(username, opponent.username, score , (err) => {
+          offsettedScore += score;
+          updateScore(username, opponent.username, offsettedScore , (err) => {
             image = getRandomImageNumber();
             getImage(image, (err, results) => {
-              socket.emit('newImageEvent', {imageURL: results, score: score});
-              opponent.socket.emit('newImageEvent', {imageURL: results, score: score});
+              console.log(offsettedScore);
+              socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
+              opponent.socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
+              offsettedScore = 0;
+              opponentWords = [];
             });
           });
         });
@@ -159,6 +170,24 @@ io.on('connection', (socket) => {
        socket.emit('skipImageEvent', {imageURL: results});
        opponent.socket.emit('skipImageEvent', {imageURL: results});
      });
+   });
+
+   socket.on('askForHintEvent', (data) => {
+     offsettedScore = -50;
+     if (data === username){
+       let randomWord = opponentWords[Math.floor(Math.random() * (opponentWords.length))];
+       wordpos.lookup(randomWord, (result) => {
+         let synonymList = [];
+         result.forEach(synset => {
+           synonymList = synonymList.concat(synset.synonyms);
+         });
+         synonymList = Array.from(new Set(synonymList));
+         synonymList = synonymList.filter((word) => {
+           return word !== randomWord;
+         });
+         socket.emit('sendHintEvent', {words: synonymList});
+       });
+     }
    });
 
    socket.on('findRoomEvent', (data) => {

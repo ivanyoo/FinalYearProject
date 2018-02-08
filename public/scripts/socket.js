@@ -19,8 +19,13 @@ class Room extends React.Component {
       matchedWord: '',
       timer: 5,
       interval: null,
-      opponentSkip: false
-    }
+      opponentSkip: false,
+      hint: {
+        showButton: false,
+        viewedHint: false,
+        words: []
+      }
+    };
     this.timer = this.timer.bind(this);
     this.checkSkip = this.checkSkip.bind(this);
   }
@@ -42,12 +47,22 @@ class Room extends React.Component {
 
   // changes the imageURL in the state and resets submittedWords and adds score
   changeImage(data) {
-    this.setState({renderWait: 'wait', timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score});
+    let hint = {
+      showButton: false,
+      viewedHint: false,
+      words: []
+    };
+    this.setState({renderWait: 'wait', timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score, hint});
     setTimeout(this.timer, 1000);
   }
 
   changeImageWithoutScore(data) {
-    this.setState({submittedWords: [], imageURL: data.imageURL, opponentSkip: false, renderWait: false});
+    let hint = {
+      showButton: false,
+      viewedHint: false,
+      words: []
+    };
+    this.setState({submittedWords: [], imageURL: data.imageURL, opponentSkip: false, renderWait: false, hint});
   }
 
   getSubmittedWords() {
@@ -122,7 +137,7 @@ class Room extends React.Component {
 
   opponentSkip() {
     if (this.state.opponentSkip) {
-      return (<p>Opponent wants to skip this word</p>);
+      return (<p id="skipWords">Opponent wants to skip this word</p>);
     } else {
       return '';
     }
@@ -134,6 +149,29 @@ class Room extends React.Component {
     } else {
       sendOneSkip(username)
     }
+  }
+
+  showHintButton() {
+    let hint = this.state.hint;
+    hint.showButton = true;
+    this.setState({hint});
+  }
+
+  addHintWords(words) {
+    let hint = this.state.hint;
+    hint.words = words;
+    hint.showButton = false;
+    this.setState({hint});
+  }
+
+  showHint() {
+    return <div>
+      {this.state.hint.words.map((word) => {
+        var width = word.length * 10 + "px";
+        var divWidth = 20 + word.length * 10 + "px";
+        return (<div style={{width: divWidth}} className="word"><p style={{width: width, margin: "auto"}}>{word}</p></div>);
+      })}
+    </div>;
   }
 
   render() {
@@ -148,8 +186,8 @@ class Room extends React.Component {
             <span>Username: {this.state.username}</span>
             <span>Score: {this.state.score}</span>
           </div>
-          <div id="photo">
-            <img src={this.state.imageURL} />
+          <div id="photoContainer">
+            <img id="photo" src={this.state.imageURL} />
           </div>
           <br />
           <div>
@@ -158,8 +196,8 @@ class Room extends React.Component {
           <br />
           {this.renderForm()}
           <button onClick={this.checkSkip} id="skip" className="form-control">Skip word</button>
+          {this.state.hint.showButton ? <button onClick={askForHint} id="skip" className="form-control">Ask for a hint</button> : ''}
           <br/>
-          {this.opponentSkip()}
         </div>
         <div>
           <div>
@@ -168,6 +206,12 @@ class Room extends React.Component {
             {this.getSubmittedWordsList()}
           </div>
         </div>
+        <div id="hintsContainer">
+          {this.state.hint.words.length > 0 ? <p id="hints-title">Hints:</p> : ''}
+          <br/>
+          {this.showHint()}
+        </div>
+        {this.opponentSkip()}
       </div>
     )
   }
@@ -272,6 +316,10 @@ const sendGameSettings = (gameSettings) => {
   socket.emit('findRoomEvent', {username: username, gameSettings: gameSettings});
 };
 
+const askForHint = () => {
+  socket.emit('askForHintEvent', username);
+};
+
 const joinRoom = () => {
   if (document.getElementById('username').value.length > 0) {
     username = document.getElementById('username').value;
@@ -319,6 +367,10 @@ socket.on('newImageEvent', (data) => {
   room.changeImage(data);
 });
 
+socket.on('sendHintEvent', (data) => {
+  room.addHintWords(data.words);
+});
+
 socket.on('renderWaitEvent', (data) => {
   room.renderWaitForScore(data.answer);
 });
@@ -337,8 +389,13 @@ socket.on('verifiedAnswerEvent', (data) => {
   console.log(data);
   if (data.username == username) {
     room.addSubmittedWord(data.answer)
-  } else if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
-    socket.emit('answerMatchEvent', { answer: data.answer});
+  } else {
+    if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
+      socket.emit('answerMatchEvent', { answer: data.answer});
+    } else {
+      room.showHintButton();
+      socket.emit('opponentAnswerVerifiedEvent', data);
+    }
   }
 });
 

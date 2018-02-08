@@ -65,6 +65,21 @@ const getHyponyms = (word, callback) => {
   });
 };
 
+const getHyponymCount = (word, callback) => {
+  var wordnetWord = new wn.Word(word);
+  wordnetWord.getSynsets((err, data) => {
+    let numHyponyms = 0;
+    async.each(data, (synset, nextSynset) => {
+      synset.getHyponyms((err, result) => {
+        numHyponyms += result.length;
+        nextSynset();
+      });
+    }, () => {
+      callback(numHyponyms);
+    })
+  });
+};
+
 
 const getHypernyms = (word, callback) => {
   var wordnetWord = new wn.Word(word);
@@ -125,31 +140,26 @@ const hasHyponyms = (word, callback) => {
 // };
 
 const getScore = (word, callback) => {
-  let hyponyms = false;
-  let hypernyms = false;
   let score = 0;
+  let hyponymCount = 0;
   async.series([
     (next) => {
-      hasHyponyms(word, (hasHyponym) => {
-        hyponyms = hasHyponym;
+      getHyponymCount(word, (count) => {
+        hyponymCount = count;
         next();
       });
     },
     (next) => {
-      hasHypernyms(word, (hasHypernym) => {
-        hypernyms = hasHypernym;
-        next();
-      });
-    },
-    (next) => {
-      if (hyponyms && hypernyms) {
-        score = 200;
-      } else if (hyponyms && !hypernyms) {
+      if (hyponymCount >= 20) {
         score = 100;
-      } else if (!hyponyms && hypernyms) {
-        score = 300;
-      } else {
+      } else if (hyponymCount >= 10) {
         score = 150;
+      } else if (hyponymCount >= 5) {
+        score = 200;
+      } else if (hyponymCount > 0){
+        score = 250;
+      } else {
+        score = 300;
       }
       async.nextTick(next);
     }
