@@ -64,10 +64,10 @@ const getImage= (imageNumber, callback) => {
   return callback(null, `https://s3-eu-west-1.amazonaws.com/114344211.photo-tagging/pixabay_images/${imageNumber}.jpg`);
 };
 
-const updateScore = (player, opponent, score, callback) => {
+const updateScore = (player, score, callback) => {
   const connection = mysql.createConnection(config.AWS_DB);
   connection.connect();
-  connection.query('UPDATE users SET totalPoints = totalPoints + ? WHERE username IN (?, ?)',[score, player, opponent], (err, results) => {
+  connection.query('UPDATE users SET totalPoints = totalPoints + ? WHERE username = ?',[score, player], (err, results) => {
     connection.end();
     if (err) {
       console.log(err);
@@ -137,14 +137,16 @@ io.on('connection', (socket) => {
      upsertOccurence(image, data.answer, (error) => {
         getScore(data.answer, (score) => {
           offsettedScore += score;
-          updateScore(username, opponent.username, offsettedScore , (err) => {
-            image = getRandomImageNumber();
-            getImage(image, (err, results) => {
-              console.log(offsettedScore);
-              socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
-              opponent.socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
-              offsettedScore = 0;
-              opponentWords = [];
+          updateScore(username, offsettedScore , (err) => {
+            updateScore(opponent.username, offsettedScore, (err) => {
+              image = getRandomImageNumber();
+              getImage(image, (err, results) => {
+                console.log(offsettedScore);
+                socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
+                opponent.socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
+                offsettedScore = 0;
+                opponentWords = [];
+              });
             });
           });
         });
@@ -159,16 +161,15 @@ io.on('connection', (socket) => {
       socket.emit('roomJoinedEvent', data.imageURL);
    });
 
-   socket.on('oneSkipEvent', (data) => {
-     socket.emit('opponentHasSkippedEvent', data);
-     opponent.socket.emit('opponentHasSkippedEvent', data);
-   });
-
-   socket.on('bothSkippedEvent', () => {
-     image = getRandomImageNumber();
-     getImage(image, (err, results) => {
-       socket.emit('skipImageEvent', {imageURL: results});
-       opponent.socket.emit('skipImageEvent', {imageURL: results});
+   socket.on('skipEvent', (data) => {
+     updateScore(data,  -50, (err) => {
+       updateScore(data == username ? opponent.username : username, 50, (err) => {
+         image = getRandomImageNumber();
+         getImage(image, (err, results) => {
+           socket.emit('skipImageEvent', {username: data, imageURL: results, score: 50});
+           opponent.socket.emit('skipImageEvent', {username: data, imageURL: results, score: 50});
+         });
+       });
      });
    });
 

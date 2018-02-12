@@ -19,7 +19,8 @@ class Room extends React.Component {
       matchedWord: '',
       timer: 5,
       interval: null,
-      opponentSkip: false,
+      skipUser: '',
+      showSkip: true,
       hint: {
         showButton: false,
         viewedHint: false,
@@ -41,7 +42,7 @@ class Room extends React.Component {
       this.setState({timer: this.state.timer - 1});
       setTimeout(room.timer, 1000);
     } else {
-      this.setState({renderWait: false, imageURL: this.state.data.imageURL, submittedWords: [] });
+      this.setState({renderWait: false, showSkip: true, imageURL: this.state.data.imageURL, submittedWords: [] });
     }
   }
 
@@ -52,17 +53,8 @@ class Room extends React.Component {
       viewedHint: false,
       words: []
     };
-    this.setState({renderWait: 'wait', timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score, hint});
+    this.setState({renderWait: 'wait', showSkip: false, timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score, hint});
     setTimeout(this.timer, 1000);
-  }
-
-  changeImageWithoutScore(data) {
-    let hint = {
-      showButton: false,
-      viewedHint: false,
-      words: []
-    };
-    this.setState({submittedWords: [], imageURL: data.imageURL, opponentSkip: false, renderWait: false, hint});
   }
 
   getSubmittedWords() {
@@ -114,7 +106,11 @@ class Room extends React.Component {
       return (<p>You matched with the word {this.state.matchedWord} <br/> Please wait while we calculate your score.</p>);
     } else if (this.state.renderWait == 'wait') {
       return (<p>You scored {this.state.scoredPoints} points with {this.state.matchedWord} <br/> A new image will appear in {this.state.timer} seconds.</p>);
-    } else {
+    } else if (this.state.renderWait == 'skipOpponent') {
+      return (<p>{this.state.skipUser} has chosen to skip this image. You gain 50 points. Image will change in {this.state.timer} seconds.</p>);
+    } else if (this.state.renderWait == 'skipMe') {
+      return (<p>You chose to skip this image. You lose 50 points. Image will change in {this.state.timer} seconds.</p>);
+    }else {
       return '';
     }
   }
@@ -131,24 +127,23 @@ class Room extends React.Component {
     }
   }
 
-  opponentHasSkipped() {
-    this.setState({opponentSkip: true});
-  }
-
-  opponentSkip() {
-    if (this.state.opponentSkip) {
-      return (<p id="skipWords">Opponent wants to skip this word</p>);
+  opponentSkip(data) {
+    let hint = {
+      showButton: false,
+      viewedHint: false,
+      words: []
+    };
+    if (data.username === username) {
+      this.setState({renderWait: 'skipMe', skipUser: data.username, timer: 5, data: data, score: this.state.score -= data.score, scoredPoints: data.score, hint});
     } else {
-      return '';
+      this.setState({renderWait: 'skipOpponent', skipUser: data.username, timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score, hint});
     }
+    setTimeout(this.timer, 1000);
   }
 
   checkSkip() {
-    if (this.state.opponentSkip) {
-      bothSkipped();
-    } else {
-      sendOneSkip(username)
-    }
+    sendSkip(username);
+    this.setState({showSkip: false});
   }
 
   showHintButton() {
@@ -195,7 +190,7 @@ class Room extends React.Component {
           </div>
           <br />
           {this.renderForm()}
-          <button onClick={this.checkSkip} id="skip" className="form-control">Skip word</button>
+          {this.state.showSkip ? <button onClick={this.checkSkip} id="skip" className="form-control">Skip word</button> : ''}
           {this.state.hint.showButton ? <button onClick={askForHint} id="skip" className="form-control">Ask for a hint</button> : ''}
           <br/>
         </div>
@@ -211,7 +206,6 @@ class Room extends React.Component {
           <br/>
           {this.showHint()}
         </div>
-        {this.opponentSkip()}
       </div>
     )
   }
@@ -340,13 +334,11 @@ const joinRoom = () => {
   }
 };
 
-const sendOneSkip = (username) => {
-  socket.emit('oneSkipEvent', username);
+const sendSkip = (username) => {
+  socket.emit('skipEvent', username);
 };
 
-const bothSkipped = () => {
-  socket.emit('bothSkippedEvent');
-};
+
 
 
 // initialises React component and displays the game
@@ -375,14 +367,8 @@ socket.on('renderWaitEvent', (data) => {
   room.renderWaitForScore(data.answer);
 });
 
-socket.on('opponentHasSkippedEvent', (data) => {
-  if (data != username) {
-    room.opponentHasSkipped();
-  }
-});
-
 socket.on('skipImageEvent', (data) => {
-  room.changeImageWithoutScore(data);
+  room.opponentSkip(data);
 });
 
 socket.on('verifiedAnswerEvent', (data) => {

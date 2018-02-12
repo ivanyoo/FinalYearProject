@@ -17,14 +17,6 @@ body {
     color: yellow;
 }
 
-#skipWords {
-    width: 600px;
-    font-family: Verdana;
-    margin: auto;
-    font-size: 2em;
-    color: darkblue;
-}
-
 #joinRoom {
     border-radius: 25px;
     position:absolute;
