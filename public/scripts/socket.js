@@ -22,8 +22,7 @@ class Room extends React.Component {
       skipUser: '',
       showSkip: true,
       hint: {
-        showButton: false,
-        viewedHint: false,
+        showButton: true,
         words: []
       }
     };
@@ -49,8 +48,7 @@ class Room extends React.Component {
   // changes the imageURL in the state and resets submittedWords and adds score
   changeImage(data) {
     let hint = {
-      showButton: false,
-      viewedHint: false,
+      showButton: true,
       words: []
     };
     this.setState({renderWait: 'wait', showSkip: false, timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score, hint});
@@ -129,8 +127,7 @@ class Room extends React.Component {
 
   opponentSkip(data) {
     let hint = {
-      showButton: false,
-      viewedHint: false,
+      showButton: true,
       words: []
     };
     if (data.username === username) {
@@ -144,12 +141,6 @@ class Room extends React.Component {
   checkSkip() {
     sendSkip(username);
     this.setState({showSkip: false});
-  }
-
-  showHintButton() {
-    let hint = this.state.hint;
-    hint.showButton = true;
-    this.setState({hint});
   }
 
   addHintWords(words) {
@@ -379,7 +370,6 @@ socket.on('verifiedAnswerEvent', (data) => {
     if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
       socket.emit('answerMatchEvent', { answer: data.answer});
     } else {
-      room.showHintButton();
       socket.emit('opponentAnswerVerifiedEvent', data);
     }
   }

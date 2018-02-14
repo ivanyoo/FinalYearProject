@@ -12,6 +12,7 @@ const io = require('socket.io')(server);
 const getScore = require('./dboperations');
 const Queue = require('./Queue.src');
 const stemmer = require('stemmer');
+const getHints = require('./hints');
 const wordpos = new WORDPOS();
 server.listen(80);
 let userid = 1;
@@ -90,7 +91,6 @@ const upsertOccurence = (imageID, word, callback) => {
   });
 };
 
-
 io.on('connection', (socket) => {
    let sessionRoomNumber;
    let username;
@@ -127,10 +127,6 @@ io.on('connection', (socket) => {
       }
    });
 
-   socket.on('opponentAnswerVerifiedEvent', (data) => {
-     opponentWords.push(data.answer);
-   });
-
    socket.on('answerMatchEvent', (data) => {
      socket.emit('renderWaitEvent', {answer: data.answer});
      opponent.socket.emit('renderWaitEvent', {answer: data.answer});
@@ -145,7 +141,6 @@ io.on('connection', (socket) => {
                 socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
                 opponent.socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
                 offsettedScore = 0;
-                opponentWords = [];
               });
             });
           });
@@ -176,17 +171,8 @@ io.on('connection', (socket) => {
    socket.on('askForHintEvent', (data) => {
      offsettedScore = -50;
      if (data === username){
-       let randomWord = opponentWords[Math.floor(Math.random() * (opponentWords.length))];
-       wordpos.lookup(randomWord, (result) => {
-         let synonymList = [];
-         result.forEach(synset => {
-           synonymList = synonymList.concat(synset.synonyms);
-         });
-         synonymList = Array.from(new Set(synonymList));
-         synonymList = synonymList.filter((word) => {
-           return word !== randomWord;
-         });
-         socket.emit('sendHintEvent', {words: synonymList});
+       getHints(image, (hintsList) => {
+         socket.emit('sendHintEvent', {words: hintsList});
        });
      }
    });
