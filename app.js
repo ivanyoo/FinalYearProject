@@ -96,10 +96,28 @@ io.on('connection', (socket) => {
    let username;
    let opponent;
    let gameMode;
+   let timer;
    let image = 1;
    let words = [];
+   let host;
    let opponentWords = [];
    let offsettedScore = 0;
+
+   const sendNewImage = () => {
+     if (host === username) {
+       image = getRandomImageNumber();
+       getImage(image, (err, results) => {
+         console.log(offsettedScore);
+         socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
+         opponent.socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
+         offsettedScore = 0;
+       });
+     }
+   };
+
+   socket.on('askForImageEvent', () => {
+     sendNewImage();
+   });
 
    socket.on(`answerEvent`, (data) => {
       if (gameMode == 0) {
@@ -135,13 +153,8 @@ io.on('connection', (socket) => {
           offsettedScore += score;
           updateScore(username, offsettedScore , (err) => {
             updateScore(opponent.username, offsettedScore, (err) => {
-              image = getRandomImageNumber();
-              getImage(image, (err, results) => {
-                console.log(offsettedScore);
-                socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
-                opponent.socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
-                offsettedScore = 0;
-              });
+              socket.emit('scoreCalculatedEvent', {score: offsettedScore});
+              opponent.socket.emit('scoreCalculatedEvent', {score: offsettedScore});
             });
           });
         });
@@ -153,7 +166,7 @@ io.on('connection', (socket) => {
          opponent = opponentSockets[gameMode][data.username];
          delete opponentSockets[gameMode][data.username];
       }
-      socket.emit('roomJoinedEvent', data.imageURL);
+      socket.emit('roomJoinedEvent',{imageURL: data.imageURL, timer});
    });
 
    socket.on('skipEvent', (data) => {
@@ -180,6 +193,7 @@ io.on('connection', (socket) => {
    socket.on('findRoomEvent', (data) => {
       console.log(data.gameSettings);
       gameMode = parseInt(data.gameSettings.mode);
+      timer = parseInt(data.gameSettings.timer);
       username = data.username;
       // if queue is not empty, dequeue, save as opponent and emit roomFoundEvent to opponent socket and this socket
       if (gameModeQueues[gameMode].getLength() > 0) {
@@ -189,8 +203,9 @@ io.on('connection', (socket) => {
          opponentSockets[gameMode][opponent.username] = {socket: socket, username: data.username};
          image = getRandomImageNumber();
          getImage(image, (err, results) => {
-           opponent.socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: data.username, imageURL: results});
-           socket.emit('roomFoundEvent', {sessionRoomNumber: sessionRoomNumber, opponent: opponent.username, imageURL: results});
+           host = data.username;
+           opponent.socket.emit('roomFoundEvent', {host: data.username, sessionRoomNumber: sessionRoomNumber, opponent: data.username, imageURL: results});
+           socket.emit('roomFoundEvent', {host: data.username, sessionRoomNumber: sessionRoomNumber, opponent: opponent.username, imageURL: results});
          });
       // else queue this socket
       } else {

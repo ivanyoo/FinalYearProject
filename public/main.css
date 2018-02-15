@@ -36,8 +36,8 @@ body {
     border-radius: 25px;
     position:absolute;
     background-color: white;
-    width: 700px;
-    height: 700px;
+    width: 800px;
+    height: 800px;
     top: 0;
     bottom: 0;
     left: 0;
@@ -63,7 +63,7 @@ body {
 }
 
 #description {
-    width: 400px;
+    width: 500px;
 }
 
 .inputBox {
@@ -83,6 +83,10 @@ body {
 #current-words {
     font-size: 2em;
     color: yellow;
+}
+
+#waitForScore {
+    width: 500px;
 }
 
 #lobby {

@@ -5,6 +5,7 @@ let opponent;
 let sessionRoomNumber;
 let room;
 let mode;
+let host;
 
 class Room extends React.Component {
   constructor(props) {
@@ -17,7 +18,8 @@ class Room extends React.Component {
       score: 0,
       renderWait: false,
       matchedWord: '',
-      timer: 5,
+      timerLength: 90,
+      timer: 90,
       interval: null,
       skipUser: '',
       showSkip: true,
@@ -26,23 +28,28 @@ class Room extends React.Component {
         words: []
       }
     };
-    this.timer = this.timer.bind(this);
     this.checkSkip = this.checkSkip.bind(this);
+    this.timer = this.timer.bind(this);
   }
 
   // sets username, initial Image URL and refreshes component
-  initialiseRoom(username, imageURL) {
-    console.log(imageURL);
-    this.setState({ username, imageURL, submittedWords: [] });
+  initialiseRoom(username, imageURL, timer) {
+    this.setState({ username, imageURL, submittedWords: [], timer, timerLength: timer }, () => { setTimeout(this.timer, 1000); } );
   }
 
   timer() {
     if (this.state.timer > 0) {
-      this.setState({timer: this.state.timer - 1});
-      setTimeout(room.timer, 1000);
+      this.setState({timer: this.state.timer - 1}, () => { setTimeout(this.timer, 1000); });
     } else {
-      this.setState({renderWait: false, showSkip: true, imageURL: this.state.data.imageURL, submittedWords: [] });
+      askForImage();
     }
+  }
+
+  getReadyForNewImage(data) {
+    this.setState({renderWait: 'newImage', showSkip: false});
+    setTimeout(() => {
+      this.changeImage(data);
+    }, 5000)
   }
 
   // changes the imageURL in the state and resets submittedWords and adds score
@@ -51,7 +58,7 @@ class Room extends React.Component {
       showButton: true,
       words: []
     };
-    this.setState({renderWait: 'wait', showSkip: false, timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score, hint});
+    this.setState({renderWait: false, showSkip: true, timer: this.state.timerLength, imageURL: data.imageURL, hint,  submittedWords: []});
     setTimeout(this.timer, 1000);
   }
 
@@ -99,22 +106,28 @@ class Room extends React.Component {
     this.setState({matchedWord: word, renderWait: true});
   }
 
+  updateCalculatedScore(score) {
+    this.setState({scoredPoints: score, renderWait: 'wait', score: this.state.score += score});
+  }
+
   waitForScore(){
     if (this.state.renderWait == true) {
-      return (<p>You matched with the word {this.state.matchedWord} <br/> Please wait while we calculate your score.</p>);
+      return (<p>You matched with the word {this.state.matchedWord} <br/> Calculating your score now.</p>);
     } else if (this.state.renderWait == 'wait') {
-      return (<p>You scored {this.state.scoredPoints} points with {this.state.matchedWord} <br/> A new image will appear in {this.state.timer} seconds.</p>);
+      return (<p>You scored {this.state.scoredPoints} points with {this.state.matchedWord} <br/></p>);
     } else if (this.state.renderWait == 'skipOpponent') {
-      return (<p>{this.state.skipUser} has chosen to skip this image. You gain 50 points. Image will change in {this.state.timer} seconds.</p>);
+      return (<p>{this.state.skipUser} has chosen to skip this image. You gain 50 points.</p>);
     } else if (this.state.renderWait == 'skipMe') {
-      return (<p>You chose to skip this image. You lose 50 points. Image will change in {this.state.timer} seconds.</p>);
-    }else {
+      return (<p>You chose to skip this image. You lose 50 points.</p>);
+    } else if (this.state.renderWait == 'newImage') {
+      return (<p>A new image will appear soon.</p>)
+    } else {
       return '';
     }
   }
 
   renderForm() {
-    if (this.state.renderWait == false) {
+    if (this.state.renderWait != 'newImage') {
       return (<div className="inputBox">
         <form  onSubmit={(event) => this.submitWord(event)}>
           <input id="inputBox" className="form-control" type="text" />
@@ -131,11 +144,11 @@ class Room extends React.Component {
       words: []
     };
     if (data.username === username) {
-      this.setState({renderWait: 'skipMe', skipUser: data.username, timer: 5, data: data, score: this.state.score -= data.score, scoredPoints: data.score, hint});
+      this.setState({renderWait: 'skipMe', skipUser: data.username, score: this.state.score -= data.score, scoredPoints: data.score, hint});
     } else {
-      this.setState({renderWait: 'skipOpponent', skipUser: data.username, timer: 5, data: data, score: this.state.score += data.score, scoredPoints: data.score, hint});
+      this.setState({renderWait: 'skipOpponent', skipUser: data.username, score: this.state.score += data.score, scoredPoints: data.score, hint});
     }
-    setTimeout(this.timer, 1000);
+    setTimeout(() => {this.getReadyForNewImage(data)}, 5000);
   }
 
   checkSkip() {
@@ -171,6 +184,7 @@ class Room extends React.Component {
             <span>Game Mode:  {this.getGameMode()}</span>
             <span>Username: {this.state.username}</span>
             <span>Score: {this.state.score}</span>
+            <span>Time: {this.state.timer}</span>
           </div>
           <div id="photoContainer">
             <img id="photo" src={this.state.imageURL} />
@@ -329,25 +343,27 @@ const sendSkip = (username) => {
   socket.emit('skipEvent', username);
 };
 
-
-
+const askForImage = () => {
+  socket.emit('askForImageEvent');
+};
 
 // initialises React component and displays the game
 socket.on('roomJoinedEvent', (data) => {
   document.getElementById('lobbyContainer').style.display = 'none';
   room = ReactDOM.render(<Room/>,
     document.getElementById('game-container'));
-  room.initialiseRoom(username, data);
+  room.initialiseRoom(username, data.imageURL, data.timer);
 });
 
 socket.on('roomFoundEvent', (data) => {
+  host = data.host;
   socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username, imageURL: data.imageURL});
   sessionRoomNumber = data.sessionRoomNumber;
   opponent = data.opponent;
 });
 
 socket.on('newImageEvent', (data) => {
-  room.changeImage(data);
+  room.getReadyForNewImage(data);
 });
 
 socket.on('sendHintEvent', (data) => {
@@ -362,9 +378,13 @@ socket.on('skipImageEvent', (data) => {
   room.opponentSkip(data);
 });
 
+socket.on('scoreCalculatedEvent', (data) => {
+  room.updateCalculatedScore(data.score);
+});
+
 socket.on('verifiedAnswerEvent', (data) => {
   console.log(data);
-  if (data.username == username) {
+  if (data.username === username) {
     room.addSubmittedWord(data.answer)
   } else {
     if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
