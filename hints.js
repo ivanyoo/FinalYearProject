@@ -10,6 +10,7 @@ const getVerifiedWords = (imageNumber, callback) => {
   connection.connect();
   connection.query('SELECT word FROM occurences WHERE noOfOccurences >= ? AND imageID = ?', [config.VERIFIED_THRESHOLD, imageNumber], (err, result) => {
     connection.end();
+    console.log(config.VERIFIED_THRESHOLD);
     if (err) {
       return callback();
     } else {
@@ -69,4 +70,5 @@ const getThreeHints = (imageNumber, callback) => {
   ]);
 };
 
-module.exports = getThreeHints;
+getVerifiedWords(11, console.log);
+module.exports = getVerifiedWords;

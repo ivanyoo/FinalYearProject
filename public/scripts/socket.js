@@ -23,6 +23,7 @@ class Room extends React.Component {
       interval: null,
       skipUser: '',
       showSkip: true,
+      hintAnswered: false,
       hint: {
         showButton: true,
         words: []
@@ -37,9 +38,19 @@ class Room extends React.Component {
     this.setState({ username, imageURL, submittedWords: [], timer, timerLength: timer }, () => { setTimeout(this.timer, 1000); } );
   }
 
+  getHintWords() {
+    return this.state.hint.words;
+  }
+
+  hintWordAnswered() {
+    this.setState({hintAnswered: true});
+  }
+
   timer() {
     if (this.state.timer > 0) {
       this.setState({timer: this.state.timer - 1}, () => { setTimeout(this.timer, 1000); });
+    }  else if (this.state.timer < 0 && this.skipUser.length >= 1) {
+      return null;
     } else {
       askForImage();
     }
@@ -58,7 +69,7 @@ class Room extends React.Component {
       showButton: true,
       words: []
     };
-    this.setState({renderWait: false, showSkip: true, timer: this.state.timerLength, imageURL: data.imageURL, hint,  submittedWords: []});
+    this.setState({renderWait: false, showSkip: true, hintAnswered: false,timer: this.state.timerLength, imageURL: data.imageURL, hint,  submittedWords: []});
     setTimeout(this.timer, 1000);
   }
 
@@ -144,9 +155,9 @@ class Room extends React.Component {
       words: []
     };
     if (data.username === username) {
-      this.setState({renderWait: 'skipMe', skipUser: data.username, score: this.state.score -= data.score, scoredPoints: data.score, hint});
+      this.setState({renderWait: 'skipMe', skipUser: data.username, timer: -1, score: this.state.score -= data.score, scoredPoints: data.score, hint});
     } else {
-      this.setState({renderWait: 'skipOpponent', skipUser: data.username, score: this.state.score += data.score, scoredPoints: data.score, hint});
+      this.setState({renderWait: 'skipOpponent', skipUser: data.username, timer: -1, score: this.state.score += data.score, scoredPoints: data.score, hint});
     }
     setTimeout(() => {this.getReadyForNewImage(data)}, 5000);
   }
@@ -170,6 +181,8 @@ class Room extends React.Component {
         var divWidth = 20 + word.length * 10 + "px";
         return (<div style={{width: divWidth}} className="word"><p style={{width: width, margin: "auto"}}>{word}</p></div>);
       })}
+      <br/>
+      {this.state.hintAnswered && <p>You cannot use hints as answers!</p>}
     </div>;
   }
 
@@ -199,7 +212,7 @@ class Room extends React.Component {
           {this.state.hint.showButton ? <button onClick={askForHint} id="skip" className="form-control">Ask for a hint</button> : ''}
           <br/>
         </div>
-        <div>
+        <div id="wordsContainer">
           <div>
             <span id="current-words">Your words so far: </span>
             <br />
@@ -307,7 +320,11 @@ const loginform = ReactDOM.render(<LoginForm/>, document.getElementById('joinRoo
 
 // sends an answer event to main app
 const answer = (result) => {
-  socket.emit(`answerEvent`, {answer: result, username: username});
+  if (room.getHintWords().indexOf(result) > -1) {
+    room.hintWordAnswered();
+  } else {
+    socket.emit(`answerEvent`, {answer: result, username: username});
+  }
 };
 
 const sendGameSettings = (gameSettings) => {

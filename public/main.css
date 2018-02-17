@@ -8,7 +8,9 @@ body {
 }
 
 #hintsContainer {
+    position: fixed;
     float: right;
+    margin-left: 90%;
     margin-right: 30px;
 }
 
@@ -51,6 +53,11 @@ body {
     display: block;
     margin: auto;
     max-height: 100%;
+}
+
+#wordsContainer {
+    float: left;
+    margin-left: 15px;
 }
 
 #photoContainer {
