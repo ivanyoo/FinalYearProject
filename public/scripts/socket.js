@@ -49,7 +49,7 @@ class Room extends React.Component {
   timer() {
     if (this.state.timer > 0) {
       this.setState({timer: this.state.timer - 1}, () => { setTimeout(this.timer, 1000); });
-    }  else if (this.state.timer < 0 && this.skipUser.length >= 1) {
+    }  else if (this.state.timer < 0 && this.state.skipUser.length >= 1) {
       return null;
     } else {
       askForImage();
@@ -393,9 +393,13 @@ socket.on('renderWaitEvent', (data) => {
 
 socket.on('skipImageEvent', (data) => {
   room.opponentSkip(data);
+  if (data.username !== username) {
+    socket.emit('opponentSkippedEvent');
+  }
 });
 
 socket.on('scoreCalculatedEvent', (data) => {
+  console.log(data.score);
   room.updateCalculatedScore(data.score);
 });
 

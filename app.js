@@ -153,6 +153,7 @@ io.on('connection', (socket) => {
           offsettedScore += score;
           updateScore(username, offsettedScore , (err) => {
             updateScore(opponent.username, offsettedScore, (err) => {
+              console.log(offsettedScore);
               socket.emit('scoreCalculatedEvent', {score: offsettedScore});
               opponent.socket.emit('scoreCalculatedEvent', {score: offsettedScore});
             });
@@ -170,6 +171,7 @@ io.on('connection', (socket) => {
    });
 
    socket.on('skipEvent', (data) => {
+     offsettedScore = 0;
      updateScore(data,  -50, (err) => {
        updateScore(data == username ? opponent.username : username, 50, (err) => {
          image = getRandomImageNumber();
@@ -179,6 +181,10 @@ io.on('connection', (socket) => {
          });
        });
      });
+   });
+
+   socket.on('opponentSkippedEvent', () => {
+     offsettedScore = 0;
    });
 
    socket.on('askForHintEvent', (data) => {
