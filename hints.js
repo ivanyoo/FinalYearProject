@@ -70,5 +70,4 @@ const getThreeHints = (imageNumber, callback) => {
   ]);
 };
 
-getVerifiedWords(11, console.log);
 module.exports = getVerifiedWords;

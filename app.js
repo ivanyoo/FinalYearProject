@@ -55,9 +55,14 @@ app.post('/login', (req, res) => {
 
 
 const getRandomImageNumber = () => {
+  let bannedNumbers = [1, 288, 317];
   const min = 2;
   const max = 600;
-  return Math.floor(Math.random() * (max - min)) + min;
+  let number = Math.floor(Math.random() * (max - min)) + min;
+  while (bannedNumbers.indexOf(number) > -1) {
+    number = Math.floor(Math.random() * (max - min)) + min;
+  }
+  return number;
 };
 
 // queries the database for url of image with id = imageNumber
@@ -102,12 +107,13 @@ io.on('connection', (socket) => {
    let host;
    let opponentWords = [];
    let offsettedScore = 0;
+   let hangmanWords = [];
+   let hangmanIndex = 0;
 
    const sendNewImage = () => {
      if (host === username) {
        image = getRandomImageNumber();
        getImage(image, (err, results) => {
-         console.log(offsettedScore);
          socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
          opponent.socket.emit('newImageEvent', {imageURL: results, score: offsettedScore});
          offsettedScore = 0;
@@ -117,6 +123,17 @@ io.on('connection', (socket) => {
 
    socket.on('askForImageEvent', () => {
      sendNewImage();
+   });
+
+   socket.on('newHangmanImageEvent', () => {
+     image = getRandomImageNumber();
+     getImage(image, (err, results) => {
+       getHints(image, (hintslist) => {
+         hangmanWords = hintslist;
+         hangmanIndex = 0;
+         socket.emit('newHangmanImageEvent', {showExit: true, image, imageURL: results, word: hangmanWords[hangmanIndex]});
+       });
+     });
    });
 
    socket.on(`answerEvent`, (data) => {
@@ -150,10 +167,8 @@ io.on('connection', (socket) => {
      opponent.socket.emit('renderWaitEvent', {answer: data.answer});
      upsertOccurence(image, data.answer, (error) => {
         getScore(data.answer, (score) => {
-          offsettedScore += score;
-          updateScore(username, offsettedScore , (err) => {
-            updateScore(opponent.username, offsettedScore, (err) => {
-              console.log(offsettedScore);
+          updateScore(username, score , (err) => {
+            updateScore(opponent.username, score, (err) => {
               socket.emit('scoreCalculatedEvent', {score: offsettedScore});
               opponent.socket.emit('scoreCalculatedEvent', {score: offsettedScore});
             });
@@ -196,13 +211,39 @@ io.on('connection', (socket) => {
      }
    });
 
+   socket.on('newHangmanWordEvent', (data) => {
+     hangmanIndex++;
+     updateScore(username, data.points, (err) => {
+       if (hangmanIndex === hangmanWords.length) {
+         image = getRandomImageNumber();
+         getImage(image, (err, results) => {
+           getHints(image, (hintslist) => {
+             hangmanWords = hintslist;
+             hangmanIndex = 0;
+             socket.emit('newHangmanImageEvent', {image, imageURL: results, word: hangmanWords[hangmanIndex]});
+           });
+         });
+       } else {
+         socket.emit('sendNewHangmanWordEvent', {word: hangmanWords[hangmanIndex]});
+       }
+     });
+   });
+
    socket.on('findRoomEvent', (data) => {
       console.log(data.gameSettings);
       gameMode = parseInt(data.gameSettings.mode);
       timer = parseInt(data.gameSettings.timer);
       username = data.username;
-      // if queue is not empty, dequeue, save as opponent and emit roomFoundEvent to opponent socket and this socket
-      if (gameModeQueues[gameMode].getLength() > 0) {
+      if (gameMode === 2) {
+        image = getRandomImageNumber();
+        getImage(image, (err, results) => {
+          getHints(image, (hintsList) => {
+            hangmanWords = hintsList;
+            socket.emit("initialiseHangmanEvent", {image, imageURL: results, word: hangmanWords[0]});
+          });
+        });
+      } else if (gameModeQueues[gameMode].getLength() > 0) {
+        // if queue is not empty, dequeue, save as opponent and emit roomFoundEvent to opponent socket and this socket
          sessionRoomNumber = roomNumber;
          roomNumber++;
          opponent = gameModeQueues[gameMode].dequeue();

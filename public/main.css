@@ -96,6 +96,12 @@ body {
     width: 500px;
 }
 
+#findingRoom {
+    margin: auto;
+    width: 200px;
+    font-size: 2em;
+}
+
 #lobby {
     border-radius: 25px;
     top: 0;
@@ -143,9 +149,27 @@ body {
     font-size: 1.25em;
 }
 
+#hangmanWord {
+    width: 100px;
+    letter-spacing: 5px;
+}
+
+#usedLetters {
+    width: 500px;
+    letter-spacing: 5px;
+}
+
+#lives {
+    width: 300px;
+}
+
+#info {
+    width: 500px;
+}
+
 h1 {
     width: 50%;
     white-space: nowrap;
     margin: auto;
-    color: papayawhip;
+    color: black;
 }

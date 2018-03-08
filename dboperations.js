@@ -88,7 +88,6 @@ const getHypernyms = (word, callback) => {
       data[0].getHypernymsTree((err, result) => {
         if (result[0]) {
           async.eachLimit(result, 1, (synset, nextSynset) => {
-            console.log(result[0].hypernym[0].hypernym[0].hypernym[0].hypernym[0]);
             if (synset.hypernym.length > 0) {
               return callback([1]);
             }
@@ -178,7 +177,6 @@ const getImageHyponyms = (imageId, callback) => {
     }
     async.each(results, (tag, nextTag) => {
       getHyponyms(tag.word, lemmaList => {
-        console.log(lemmaList);
         hyponyms += lemmaList;
         async.nextTick(nextTag);
       });
