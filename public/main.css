@@ -163,6 +163,16 @@ body {
     width: 300px;
 }
 
+#hangmanImage {
+    width: 480px;
+    margin-top: 50px;
+    margin-left: 30px;
+}
+#hangmanNextGame {
+    width: 400px;
+    margin: auto;
+}
+
 #info {
     width: 500px;
 }
@@ -172,4 +182,12 @@ h1 {
     white-space: nowrap;
     margin: auto;
     color: black;
+}
+
+#finishTest {
+    width: 500px;
+    margin: auto;
+    font-family: Verdana;
+    font-size: 3em;
+    color: yellow;
 }

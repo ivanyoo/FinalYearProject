@@ -149,11 +149,11 @@ const getScore = (word, callback) => {
       });
     },
     (next) => {
-      if (hyponymCount >= 20) {
+      if (hyponymCount >= 30) {
         score = 100;
-      } else if (hyponymCount >= 10) {
+      } else if (hyponymCount >= 20) {
         score = 150;
-      } else if (hyponymCount >= 5) {
+      } else if (hyponymCount >= 10) {
         score = 200;
       } else if (hyponymCount > 0){
         score = 250;

@@ -25,8 +25,15 @@ class Room extends React.Component {
   }
 
   // sets username, initial Image URL and refreshes component
-  initialiseRoom(username, imageURL, timer) {
-    this.setState({ username, imageURL, submittedWords: [], timer, timerLength: timer }, () => { setTimeout(this.timer, 1000); } );
+  initialiseRoom(username, imageURL, timer, test = false, hints = null, useHints = false) {
+    let hint = {showButton: true, words: []};
+    if (test) {
+      hint.showButton = false;
+    }
+    if (hints !== null) {
+      hint.words = hints;
+    }
+    this.setState({ username, imageURL, submittedWords: [], timer, timerLength: timer, test, useHints, hint }, () => { setTimeout(this.timer, 1000); } );
   }
 
   getHintWords() {
@@ -39,6 +46,7 @@ class Room extends React.Component {
 
   timer() {
     if (this.state.timer > 0) {
+      timer = this.state.timer;
       this.setState({timer: this.state.timer - 1}, () => { setTimeout(this.timer, 1000); });
     }  else if (this.state.timer < 0 && this.state.skipUser.length >= 1) {
       return null;
@@ -60,6 +68,10 @@ class Room extends React.Component {
       showButton: true,
       words: []
     };
+    if (this.state.test){
+      hint.showButton = false;
+      hint.words = data.hints;
+    }
     this.setState({renderWait: false, showSkip: true, hintAnswered: false,timer: this.state.timerLength, imageURL: data.imageURL, hint,  submittedWords: []});
     setTimeout(this.timer, 1000);
   }
@@ -145,10 +157,13 @@ class Room extends React.Component {
       showButton: true,
       words: []
     };
+    if (this.state.test){
+      hint.showButton = false;
+    }
     if (data.username === username) {
-      this.setState({renderWait: 'skipMe', skipUser: data.username, timer: -1, score: this.state.score -= data.score, scoredPoints: data.score, hint});
+      this.setState({renderWait: 'skipMe', skipUser: data.username, timer: -1, score: this.state.score -= data.score, scoredPoints: data.score, hint,showSkip: false});
     } else {
-      this.setState({renderWait: 'skipOpponent', skipUser: data.username, timer: -1, score: this.state.score += data.score, scoredPoints: data.score, hint});
+      this.setState({renderWait: 'skipOpponent', skipUser: data.username, timer: -1, score: this.state.score += data.score, scoredPoints: data.score, hint, showSkip: false});
     }
     setTimeout(() => {this.getReadyForNewImage(data)}, 5000);
   }

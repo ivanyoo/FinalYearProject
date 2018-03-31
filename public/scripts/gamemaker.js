@@ -2,7 +2,7 @@ class GameMaker extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      timer: 90,
+      timer: 60,
       mode: null,
       taboowords: false,
       noOfPlayers: 2
@@ -63,15 +63,30 @@ class GameMaker extends React.Component {
   //   </div>);
   // }
 
+  // FINAL VERSION:
+  // render() {
+  //   return (<div id="lobby">
+  //     <div>
+  //       Game Mode:
+  //       <br />
+  //       <button className="btn btn-default" onClick={() => this.changeMode(0)}>Versus Mode</button>
+  //       <button className="btn btn-default" onClick={() => this.changeMode(2)}>Hangman</button>
+  //       <br/>
+  //     </div>
+  //   </div>);
+  // }
+
+
+  // TEST VERSION:
+
   render() {
     return (<div id="lobby">
-      <div>
-        Game Mode:
-        <br />
-        <button className="btn btn-default" onClick={() => this.changeMode(0)}>Versus Mode</button>
-        <button className="btn btn-default" onClick={() => this.changeMode(2)}>Hangman</button>
+      <div>Game Mode:<br />
+        <button className="btn btn-default" onClick={() => this.changeMode("test1")}>Test One</button>
+        <button className="btn btn-default" onClick={() => this.changeMode('test2')}>Test Two</button>
         <br/>
       </div>
     </div>);
   }
+
 }

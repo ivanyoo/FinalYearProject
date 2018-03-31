@@ -2,17 +2,19 @@ class Hangman extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      livesCount: 10,
+      livesCount: 8,
       image: null,
       imageURL: '',
       word: '',
       revealedLetters: [],
       guessedWord: '',
-      lives: 10,
+      lives: 8,
       renderWait: false,
       info: '',
       showExit: false,
-      score: 0
+      score: 0,
+      hangmanImage: "hangman/0.jpg",
+      skippedWord: false
     }
   }
 
@@ -51,10 +53,11 @@ class Hangman extends React.Component {
         }
       } else {
         let lives = this.state.lives - 1;
+        let hangmanImage = "hangman/" + (this.state.livesCount - lives) + ".jpg";
         if (lives <= 0) {
-          this.setState({info: 'You have no more lives. You scored a total of ' + this.state.score + ' points', renderWait: true, showExit: true});
+          this.setState({lives, hangmanImage, info: 'You have no more lives. The missing word was ' + this.state.word + '. You scored a total of ' + this.state.score + ' points', renderWait: true, showExit: true});
         } else {
-          this.setState({lives: this.state.lives - 1});
+          this.setState({lives: lives, hangmanImage});
         }
       }
     }
@@ -69,7 +72,7 @@ class Hangman extends React.Component {
     for (let index = 0; index < data.word.length; index++) {
       guessedWord += '_';
     }
-    this.setState({guessedWord, showExit: false, word: data.word, image: data.image, info: '', imageURL: data.imageURL, revealedLetters:[], renderWait: false, lives: this.state.livesCount});
+    this.setState({guessedWord, showExit: false, word: data.word, hangmanImage: "hangman/0.jpg", image: data.image, info: '', imageURL: data.imageURL, revealedLetters:[], renderWait: false, lives: this.state.livesCount});
   }
 
   prepareForNewImage(data) {
@@ -87,13 +90,13 @@ class Hangman extends React.Component {
       guessedWord += '_';
     }
     setTimeout(() => {
-      this.setState({word, guessedWord, lives: this.state.livesCount, revealedLetters: [], renderWait: false, info: ''});
+      this.setState({word, hangmanImage: "hangman/0.jpg", guessedWord, lives: this.state.livesCount, revealedLetters: [], skippedWord: false, renderWait: false, info: ''});
     }, 3000);
   }
 
   wordFilled() {
     let points = this.calculatePoints();
-    let info = 'You have successfully matched all the letters. A new word will appear soon. You scored' + points + 'points.';
+    let info = 'You have successfully matched all the letters. A new word will appear soon. You scored ' + points + ' points.';
     newHangmanWord(points, this.state.lives, this.state.word);
     this.setState({guessedWord: this.state.word, info, renderWait: true, score: this.state.score + points});
   }
@@ -117,15 +120,22 @@ class Hangman extends React.Component {
   }
 
   renderButtons() {
-    return (<div>
+    return (<div id="hangmanNextGame">
       <button className="btn btn-default" onClick={() => this.resetGame()}>Play again</button>
       <button className="btn btn-default" onClick={() => returnToStart()}>Return to menu</button>
-    </div>)
+    </div>);
+  }
+
+  skipWord() {
+    let info = "You have chosen to skip this word. The word you skipped was " + this.state.word + ". You lose 100 points. A new word will appear soon.";
+    this.setState({info, skippedWord: true, score: this.state.score - 100});
+    skipHangmanWord(this.state.word);
   }
 
   render() {
     return(
       <div>
+        <img id="hangmanImage" src={this.state.hangmanImage} />
         <div id="game">
           <h1>Hangman Mode</h1>
           <p id="info">{this.state.info}</p>
@@ -135,9 +145,11 @@ class Hangman extends React.Component {
           <p id="lives">Lives: {this.state.lives} Score: {this.state.score}</p>
           <br />
           {!this.state.showExit && <p id="hangmanWord">{this.state.guessedWord}</p>}
-          {!this.state.showExit && this.renderForm()}
+          {!this.state.showExit && !this.state.skippedWord && this.renderForm()}
           {!this.state.showExit && <p >Letters used: <p id="usedLetters">{this.state.revealedLetters}</p></p>}
           {this.state.showExit && this.renderButtons()}
+          <br />
+          {!this.state.skippedWord && <button onClick={() => { this.skipWord(); }}>Skip word</button>}
             </div>
       </div>
     );
