@@ -1,14 +1,13 @@
 //'http://phototagging.eu-west-1.elasticbeanstalk.com/'
-const socket = io.connect('localhost');
+const socket = io.connect('http://phototagging.eu-west-1.elasticbeanstalk.com/');
 let username;
 let opponent;
-let sessionRoomNumber;
 let room;
 let mode;
 let host;
 let wordsUsed = new Set();
 let score = 0;
-let timerMax = 90;
+let timerMax = 60;
 let timer;
 let imageScore = 0;
 const loginform = ReactDOM.render(<LoginForm/>, document.getElementById('joinRoom'));
@@ -23,16 +22,19 @@ const answer = (result) => {
 };
 
 const sendGameSettings = (gameSettings) => {
+  // unmount lobby component
   ReactDOM.unmountComponentAtNode(document.getElementById('lobbyContainer'));
-  document.getElementById('lobbyContainer').outerHTML = `<div id="lobbyContainer"}><p id="findingRoom"}>Finding Room</p></div>`;
+  document.getElementById('lobbyContainer').outerHTML = `<div id="lobbyContainer"><p id="findingRoom">Finding an opponent...</p></div>`;
+  // send back game settings to server
   socket.emit('findRoomEvent', {username: username, gameSettings: gameSettings});
 };
 
 const askForHint = () => {
+  // ask server for hints
   socket.emit('askForHintEvent', username);
 };
 
-const joinRoom = () => {
+const login = () => {
   if (document.getElementById('username').value.length > 0) {
     username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
@@ -75,23 +77,29 @@ const newHangmanImage = () => {
 const returnToStart = () => {
   room = null;
   document.getElementById('lobbyContainer').style.display = 'inline';
+  // unmount game component
   ReactDOM.unmountComponentAtNode(document.getElementById('game-container'));
+  // render lobby
   ReactDOM.render(<GameMaker/>, document.getElementById('lobbyContainer'));
 
 };
 
 // initialises React component and displays the game
 socket.on('roomJoinedEvent', (data) => {
+  // hide lobby
   document.getElementById('lobbyContainer').style.display = 'none';
+  // render game
   room = ReactDOM.render(<Room/>,
     document.getElementById('game-container'));
+  // initialise game with image and timer
   room.initialiseRoom(username, data.imageURL, data.timer);
 });
 
 socket.on('roomFoundEvent', (data) => {
+  // set the host
   host = data.host;
-  socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username, imageURL: data.imageURL});
-  sessionRoomNumber = data.sessionRoomNumber;
+  socket.emit('joinRoomEvent', { username: username, imageURL: data.imageURL});
+  // set opponent
   opponent = data.opponent;
 });
 
@@ -131,9 +139,16 @@ socket.on('initialiseHangmanEvent', (data) => {
 });
 
 socket.on('newImageEvent', (data) => {
+  // clear wordsUsed
   wordsUsed = new Set();
+  // reset image Score
   imageScore = 0;
+  // update game component
   room.getReadyForNewImage(data);
+  if (data.username !== username) {
+    // update index in server
+    socket.emit('updateImageIndexEvent');
+  }
 });
 
 socket.on('sendHintEvent', (data) => {
@@ -145,18 +160,25 @@ socket.on('renderWaitEvent', (data) => {
 });
 
 socket.on('skipImageEvent', (data) => {
+  // refresh wordsUsed
   wordsUsed = new Set();
+  // refresh imageScore
   imageScore = 0;
   room.opponentSkip(data);
   if (data.username !== username) {
+    score += 50;
     socket.emit('updateImageIndexEvent');
+    socket.emit('updateNumMatchesEvent', {numMatches: data.numMatches});
+  } else {
+    score -= 50;
   }
 });
 
 socket.on('scoreCalculatedEvent', (data) => {
-  score += data.score;
+  score = score + data.score;
   imageScore += data.score;
   room.updateCalculatedScore(data.score);
+  socket.emit('updateNumMatchesEvent', {numMatches: data.numMatches});
 });
 
 socket.on('verifiedAnswerEvent', (data) => {
@@ -166,13 +188,11 @@ socket.on('verifiedAnswerEvent', (data) => {
   } else {
     if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
       socket.emit('answerMatchEvent', { answer: data.answer, timer: timerMax - timer });
-    } else {
-      socket.emit('opponentAnswerVerifiedEvent', data);
     }
   }
 });
 
-socket.on('finishTestEvent', () => {
+socket.on('finishTestEvent', (data) => {
   room = null;
   ReactDOM.unmountComponentAtNode(document.getElementById('game-container'));
   document.getElementById('game-container').innerHTML = '<div id="finishTest">Thank you for taking part in the test for our game. Your score this session is ' + score + '. Well done.</div>';

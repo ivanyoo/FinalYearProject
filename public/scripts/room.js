@@ -1,6 +1,6 @@
 class Room extends React.Component {
   constructor(props) {
-    // store username, imageURL and submittedWords in component's state
+    // store display items in component's state
     super(props);
     this.state = {
       username: '',
@@ -9,8 +9,8 @@ class Room extends React.Component {
       score: 0,
       renderWait: false,
       matchedWord: '',
-      timerLength: 90,
-      timer: 90,
+      timerLength: 60,
+      timer: 60,
       interval: null,
       skipUser: '',
       showSkip: true,
@@ -20,19 +20,23 @@ class Room extends React.Component {
         words: []
       }
     };
+    // bind functions that refer to the component to itself
     this.checkSkip = this.checkSkip.bind(this);
     this.timer = this.timer.bind(this);
   }
 
-  // sets username, initial Image URL and refreshes component
+  // sets initial variables such as imageURL etc
   initialiseRoom(username, imageURL, timer, test = false, hints = null, useHints = false) {
     let hint = {showButton: true, words: []};
+    // don't show hint button during tests
     if (test) {
       hint.showButton = false;
     }
+    // if given hints display them
     if (hints !== null) {
       hint.words = hints;
     }
+    // update component's state
     this.setState({ username, imageURL, submittedWords: [], timer, timerLength: timer, test, useHints, hint }, () => { setTimeout(this.timer, 1000); } );
   }
 
@@ -62,7 +66,7 @@ class Room extends React.Component {
     }, 5000)
   }
 
-  // changes the imageURL in the state and resets submittedWords and adds score
+  // changes the imageURL in the state and resets submittedWords and hints
   changeImage(data) {
     let hint = {
       showButton: true,
@@ -72,7 +76,8 @@ class Room extends React.Component {
       hint.showButton = false;
       hint.words = data.hints;
     }
-    this.setState({renderWait: false, showSkip: true, hintAnswered: false,timer: this.state.timerLength, imageURL: data.imageURL, hint,  submittedWords: []});
+    this.setState({renderWait: false, showSkip: true, hintAnswered: false,timer: this.state.timerLength,
+      imageURL: data.imageURL, hint,  submittedWords: []});
     setTimeout(this.timer, 1000);
   }
 
@@ -95,12 +100,15 @@ class Room extends React.Component {
     let word = document.getElementById('inputBox').value.toLowerCase();
     document.getElementById('inputBox').value = '';
     if(/^[a-zA-Z]+$/.test(word)) {
-      answer(word);
+      let submittedWords = this.state.submittedWords;
+      if (!submittedWords.includes(word)) {
+        answer(word);
+      }
     }
   }
 
   getGameMode() {
-    if (mode == 1) {
+    if (mode === 1) {
       return 'Adjectives Only';
     }
     return 'Classic';
@@ -125,15 +133,15 @@ class Room extends React.Component {
   }
 
   waitForScore(){
-    if (this.state.renderWait == true) {
+    if (this.state.renderWait === true) {
       return (<p>You matched with the word {this.state.matchedWord} <br/> Calculating your score now.</p>);
-    } else if (this.state.renderWait == 'wait') {
+    } else if (this.state.renderWait === 'wait') {
       return (<p>You scored {this.state.scoredPoints} points with {this.state.matchedWord} <br/></p>);
-    } else if (this.state.renderWait == 'skipOpponent') {
+    } else if (this.state.renderWait === 'skipOpponent') {
       return (<p>{this.state.skipUser} has chosen to skip this image. You gain 50 points.</p>);
-    } else if (this.state.renderWait == 'skipMe') {
+    } else if (this.state.renderWait === 'skipSelf') {
       return (<p>You chose to skip this image. You lose 50 points.</p>);
-    } else if (this.state.renderWait == 'newImage') {
+    } else if (this.state.renderWait === 'newImage') {
       return (<p>A new image will appear soon.</p>)
     } else {
       return '';
@@ -141,7 +149,7 @@ class Room extends React.Component {
   }
 
   renderForm() {
-    if (this.state.renderWait != 'newImage') {
+    if (this.state.renderWait !== 'newImage') {
       return (<div className="inputBox">
         <form  onSubmit={(event) => this.submitWord(event)}>
           <input id="inputBox" className="form-control" type="text" />
@@ -160,10 +168,13 @@ class Room extends React.Component {
     if (this.state.test){
       hint.showButton = false;
     }
+    // checks if you or opponent skipped
     if (data.username === username) {
-      this.setState({renderWait: 'skipMe', skipUser: data.username, timer: -1, score: this.state.score -= data.score, scoredPoints: data.score, hint,showSkip: false});
+      this.setState({renderWait: 'skipSelf', skipUser: data.username, timer: -1,
+        score: this.state.score -= data.score, scoredPoints: data.score, hint,showSkip: false});
     } else {
-      this.setState({renderWait: 'skipOpponent', skipUser: data.username, timer: -1, score: this.state.score += data.score, scoredPoints: data.score, hint, showSkip: false});
+      this.setState({renderWait: 'skipOpponent', skipUser: data.username, timer: -1,
+        score: this.state.score += data.score, scoredPoints: data.score, hint, showSkip: false});
     }
     setTimeout(() => {this.getReadyForNewImage(data)}, 5000);
   }
@@ -183,8 +194,8 @@ class Room extends React.Component {
   showHint() {
     return <div>
       {this.state.hint.words.map((word) => {
-        var width = word.length * 10 + "px";
-        var divWidth = 20 + word.length * 10 + "px";
+        let width = word.length * 10 + "px";
+        let divWidth = 20 + word.length * 10 + "px";
         return (<div style={{width: divWidth}} className="word"><p style={{width: width, margin: "auto"}}>{word}</p></div>);
       })}
       <br/>
@@ -210,7 +221,7 @@ class Room extends React.Component {
           </div>
           <br />
           <div>
-            {this.state.renderWait == false ? <p id="submitText">Submit words that describe the image:</p> : <p id="submitText"></p>}
+            {this.state.renderWait === false ? <p id="submitText">Submit words that describe the image:</p> : <p id="submitText" />}
           </div>
           <br />
           {this.renderForm()}

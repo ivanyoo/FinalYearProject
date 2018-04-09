@@ -78,12 +78,13 @@ class GameMaker extends React.Component {
 
 
   // TEST VERSION:
-
+  //
   render() {
     return (<div id="lobby">
       <div>Game Mode:<br />
         <button className="btn btn-default" onClick={() => this.changeMode("test1")}>Test One</button>
         <button className="btn btn-default" onClick={() => this.changeMode('test2')}>Test Two</button>
+        <button className="btn btn-default" onClick={() => this.changeMode(2)}>Hangman</button>
         <br/>
       </div>
     </div>);

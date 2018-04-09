@@ -42,39 +42,51 @@ const updateDBOccurences = () => {
 };
 
 const getHyponyms = (word, callback) => {
-  var wordnetWord = new wn.Word(word);
+  // transform word to a wordnetWord
+  let wordnetWord = new wn.Word(word);
+  // get the word's synsets
   wordnetWord.getSynsets((err, data) => {
     if (data[0]) {
+      // get the hyponyms
       data[0].getHyponymsTree((err, result) => {
         if(result[0]){
+          // for each synset, if there is a hyponym return true
           async.eachLimit(result, 1, (synset,nextSynset) => {
             if (synset.hyponym.length > 0) {
-              return callback([1]);
+              return callback(true);
             }
             nextSynset();
           }, () => {
-            return callback([]);
+            // else return false
+            return callback(false);
           });
         } else {
-          callback([]);
+          callback(false);
         }
       });
     } else {
-      return callback([]);
+      return callback(false);
     }
   });
 };
 
 const getHyponymCount = (word, callback) => {
-  var wordnetWord = new wn.Word(word);
+  // transform word to a wordnetWord
+  let wordnetWord = new wn.Word(word);
+  // get the word's synsets
   wordnetWord.getSynsets((err, data) => {
+    // save the number of hyponyms in a variable
     let numHyponyms = 0;
+    // for each synset of the word
     async.each(data, (synset, nextSynset) => {
+      // get the synset's hyponyms
       synset.getHyponyms((err, result) => {
+        // add the length to the variable
         numHyponyms += result.length;
         nextSynset();
       });
     }, () => {
+      // return the number of hyponyms
       callback(numHyponyms);
     })
   });

@@ -1,7 +1,7 @@
 class LoginForm extends React.Component {
   submitForm(event) {
     event.preventDefault();
-    joinRoom();
+    login();
   }
 
   render() {
