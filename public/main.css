@@ -1,0 +1,193 @@
+body {
+    background-color: crimson;
+}
+
+#skip {
+    width: 200px;
+
+}
+
+#hintsContainer {
+    position: fixed;
+    float: right;
+    margin-left: 90%;
+    margin-right: 30px;
+}
+
+#hints-title {
+    font-size: 2em;
+    color: yellow;
+}
+
+#joinRoom {
+    border-radius: 25px;
+    position:absolute;
+    background-color: white;
+    width: 300px;
+    height: 250px;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    padding-top: 30px;
+    padding-bottom: 30px;
+}
+
+#game {
+    border-radius: 25px;
+    position:absolute;
+    background-color: white;
+    width: 800px;
+    height: 800px;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    padding-top: 30px;
+    padding-bottom: 30px;
+}
+
+#photo{
+    display: block;
+    margin: auto;
+    max-height: 100%;
+}
+
+#wordsContainer {
+    float: left;
+    margin-left: 15px;
+}
+
+#photoContainer {
+    width: 640px;
+    height: 480px;
+}
+
+#submitText {
+    width: 400px;
+}
+
+#description {
+    width: 500px;
+}
+
+.inputBox {
+    width: 400px;
+}
+
+#game span {
+    padding-right: 10px;
+}
+
+#game * {
+    font-variant: small-caps;
+    font-family: Verdana;
+    margin: auto;
+}
+
+#current-words {
+    font-size: 2em;
+    color: yellow;
+}
+
+#waitForScore {
+    width: 500px;
+}
+
+#findingRoom {
+    margin: auto;
+    width: 200px;
+    font-size: 2em;
+}
+
+#lobby {
+    border-radius: 25px;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    position:absolute;
+    background-color: white;
+    width: 500px;
+    height: 500px;
+    margin: auto;
+    padding-top: 30px;
+    padding-bottom: 30px;
+}
+
+#lobby div{
+    font-variant: small-caps;
+    font-family: Verdana;
+    margin: auto;
+    width: 300px;
+    padding-bottom: 10px;
+}
+
+#lobby div input {
+    width: 20%;
+}
+
+#joinRoom * {
+    font-variant: small-caps;
+    font-family: Verdana;
+    width: 200px;
+    margin: auto;
+}
+
+.word {
+    background-color: white;
+    font-family: Verdana;
+    font-variant: small-caps;
+    font-size: 1.25em;
+    margin-bottom: 10px;
+    border-radius: 10px;
+}
+
+#joinRoom p {
+    font-size: 1.25em;
+}
+
+#hangmanWord {
+    width: 100px;
+    letter-spacing: 5px;
+}
+
+#usedLetters {
+    width: 500px;
+    letter-spacing: 5px;
+}
+
+#lives {
+    width: 300px;
+}
+
+#hangmanImage {
+    width: 480px;
+    margin-top: 50px;
+    margin-left: 30px;
+}
+#hangmanNextGame {
+    width: 400px;
+    margin: auto;
+}
+
+#info {
+    width: 500px;
+}
+
+h1 {
+    width: 50%;
+    white-space: nowrap;
+    margin: auto;
+    color: black;
+}
+
+#finishTest {
+    width: 500px;
+    margin: auto;
+    font-family: Verdana;
+    font-size: 3em;
+    color: yellow;
+}

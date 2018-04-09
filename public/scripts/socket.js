@@ -1,138 +1,40 @@
-//'http://phototagging-env.t2np5kseqn.eu-west-1.elasticbeanstalk.com/'
-const socket = io.connect('localhost');
+//'http://phototagging.eu-west-1.elasticbeanstalk.com/'
+const socket = io.connect('http://phototagging.eu-west-1.elasticbeanstalk.com/');
 let username;
 let opponent;
-let sessionRoomNumber;
 let room;
 let mode;
-
-class Room extends React.Component {
-  constructor(props) {
-    // store username, imageURL and submittedWords in component's state
-    super(props);
-    this.state = {
-      username: '',
-      imageURL: '',
-      submittedWords: [],
-      score: 0,
-    }
-  }
-
-  // sets username, initial Image URL and refreshes component
-  initialiseRoom(username, imageURL) {
-    console.log(imageURL);
-    this.setState({ username, imageURL, submittedWords: [] });
-  }
-
-  // changes the imageURL in the state and resets submittedWords and adds score
-  changeImage(imageURL) {
-    this.setState({ imageURL, submittedWords: [], score: this.state.score += 100 });
-  }
-
-  getSubmittedWords() {
-    return this.state.submittedWords;
-  }
-
-  // adds word to submittedWords in state
-  addSubmittedWord(word) {
-    let submittedWords = this.state.submittedWords;
-    if (!submittedWords.includes(word)) {
-      submittedWords.push(word);
-      this.setState({ submittedWords });
-    }
-  }
-
-  // checks if user input only contains letters and calls answer
-  submitWord(event) {
-    event.preventDefault();
-    let word = document.getElementById('inputBox').value.toLowerCase();
-    document.getElementById('inputBox').value = '';
-    if(/^[a-zA-Z]+$/.test(word)) {
-      answer(word);
-    }
-  }
-
-  getGameMode() {
-    if (mode == 1) {
-      return 'Adjectives Only';
-    }
-    return 'Classic';
-  }
-
-  render() {
-    return(
-      <div>
-        <div className="title">
-          <span><b>Photo-tagging</b></span>
-        </div>
-        <div className="gameMode">
-          Game Mode:  {this.getGameMode()}
-        </div>
-        <div className="username">
-          Username: {this.state.username}
-        </div>
-        <div>
-          Score: {this.state.score}
-        </div>
-        <br/>
-        <div className="photo">
-          <img src={this.state.imageURL} />
-        </div>
-        <br />
-        <div>
-          Submit words that describe the image:
-        </div>
-        <br />
-        <div className="inputBox">
-          <form  onSubmit={(event) => this.submitWord(event)}>
-            <input id="inputBox" type="text" />
-          </form>
-        </div>
-        <div>
-          Your words so far:
-          <br />
-          {this.state.submittedWords.join(' ')}
-        </div>
-      </div>
-    )
-  }
-}
-
-
-class LoginForm extends React.Component {
-  submitForm(event) {
-    event.preventDefault();
-    joinRoom();
-  }
-
-  render() {
-    return (<div>
-      <form onSubmit={this.submitForm}>
-      Username: <input type="text" id="username" />
-      <br/>
-      Password: <input type="password" id="password" />
-      <br/>
-      <input type="submit" value="Login / Register"/>
-      </form>
-      <p id="login-message"></p>
-    </div>)
-  }
-}
-
+let host;
+let wordsUsed = new Set();
+let score = 0;
+let timerMax = 60;
+let timer;
+let imageScore = 0;
 const loginform = ReactDOM.render(<LoginForm/>, document.getElementById('joinRoom'));
 
 // sends an answer event to main app
 const answer = (result) => {
-  socket.emit(`answerEvent`, {answer: result, username: username});
+  if (room.getHintWords().indexOf(result) > -1) {
+    room.hintWordAnswered();
+  } else {
+    socket.emit(`answerEvent`, {answer: result, username: username});
+  }
 };
 
-const pickGameMode = (gameMode) => {
-  document.getElementById('lobby').outerHTML = `<p id="lobby"}>Finding Room</p>`;
-  mode = gameMode;
-  socket.emit('findRoomEvent', {username: username, gameMode});
+const sendGameSettings = (gameSettings) => {
+  // unmount lobby component
+  ReactDOM.unmountComponentAtNode(document.getElementById('lobbyContainer'));
+  document.getElementById('lobbyContainer').outerHTML = `<div id="lobbyContainer"><p id="findingRoom">Finding an opponent...</p></div>`;
+  // send back game settings to server
+  socket.emit('findRoomEvent', {username: username, gameSettings: gameSettings});
 };
 
-const joinRoom = () => {
+const askForHint = () => {
+  // ask server for hints
+  socket.emit('askForHintEvent', username);
+};
+
+const login = () => {
   if (document.getElementById('username').value.length > 0) {
     username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
@@ -144,10 +46,7 @@ const joinRoom = () => {
         document.getElementById('login-message').outerHTML = `<p id="login-message"}>${result.error}</p>`;
       } else {
         document.getElementById('joinRoom').style.display = 'none';
-        document.getElementById('lobby').outerHTML = `<div id="lobby">
-            <button onClick="pickGameMode(0)">Classic</button>
-            <button onClick="pickGameMode(1)">Adjectives only</button>
-        </div>`;
+        ReactDOM.render(<GameMaker/>, document.getElementById('lobbyContainer'));
       }
     });
   } else {
@@ -155,32 +54,156 @@ const joinRoom = () => {
   }
 };
 
+const newHangmanWord = (points, livesLeft, word) => {
+  socket.emit('newHangmanWordEvent', {points, livesLeft, word});
+};
+
+const sendSkip = (username) => {
+  socket.emit('skipEvent', {username, numAnswers: wordsUsed.size, timer});
+};
+
+const skipHangmanWord = (word) => {
+  socket.emit('skipHangmanWordEvent', {word});
+};
+
+const askForImage = () => {
+  socket.emit('askForImageEvent', {numAnswers: wordsUsed.size, score: imageScore});
+};
+
+const newHangmanImage = () => {
+  socket.emit('newHangmanImageEvent');
+};
+
+const returnToStart = () => {
+  room = null;
+  document.getElementById('lobbyContainer').style.display = 'inline';
+  // unmount game component
+  ReactDOM.unmountComponentAtNode(document.getElementById('game-container'));
+  // render lobby
+  ReactDOM.render(<GameMaker/>, document.getElementById('lobbyContainer'));
+
+};
 
 // initialises React component and displays the game
 socket.on('roomJoinedEvent', (data) => {
-  document.getElementById('lobby').style.display = 'none';
+  // hide lobby
+  document.getElementById('lobbyContainer').style.display = 'none';
+  // render game
   room = ReactDOM.render(<Room/>,
     document.getElementById('game-container'));
-  room.initialiseRoom(username, data);
+  // initialise game with image and timer
+  room.initialiseRoom(username, data.imageURL, data.timer);
 });
 
 socket.on('roomFoundEvent', (data) => {
-  socket.emit('joinRoomEvent', {roomNumber: data.sessionRoomNumber, username: username});
-  sessionRoomNumber = data.sessionRoomNumber;
+  // set the host
+  host = data.host;
+  socket.emit('joinRoomEvent', { username: username, imageURL: data.imageURL});
+  // set opponent
   opponent = data.opponent;
 });
 
+socket.on('joinTestOneEvent', data => {
+  document.getElementById('lobbyContainer').style.display = 'none';
+  room = ReactDOM.render(<Room/>,
+    document.getElementById('game-container'));
+  room.initialiseRoom(username, data.imageURL, data.timer, true, data.hints, data.useHints);
+});
+
+socket.on('joinTestTwoEvent', data => {
+  document.getElementById('lobbyContainer').style.display = 'none';
+  room = ReactDOM.render(<Room/>,
+    document.getElementById('game-container'));
+  room.initialiseRoom(username, data.imageURL, data.timer, true);
+});
+
+socket.on('testOneJoinedEvent', data => {
+  host = data.host;
+  opponent = data.opponent;
+  data.username = username;
+  socket.emit('sendTestOneOpponent', data);
+});
+
+socket.on('testTwoJoinedEvent', data => {
+  host = data.host;
+  opponent = data.opponent;
+  data.username = username;
+  socket.emit('sendTestTwoOpponent', data);
+});
+
+socket.on('initialiseHangmanEvent', (data) => {
+  document.getElementById('lobbyContainer').style.display = 'none';
+   room = ReactDOM.render(<Hangman/>,
+    document.getElementById('game-container'));
+  room.initialiseHangman(data);
+});
+
 socket.on('newImageEvent', (data) => {
-  room.changeImage(data);
+  // clear wordsUsed
+  wordsUsed = new Set();
+  // reset image Score
+  imageScore = 0;
+  // update game component
+  room.getReadyForNewImage(data);
+  if (data.username !== username) {
+    // update index in server
+    socket.emit('updateImageIndexEvent');
+  }
+});
+
+socket.on('sendHintEvent', (data) => {
+  room.addHintWords(data.words);
+});
+
+socket.on('renderWaitEvent', (data) => {
+  room.renderWaitForScore(data.answer);
+});
+
+socket.on('skipImageEvent', (data) => {
+  // refresh wordsUsed
+  wordsUsed = new Set();
+  // refresh imageScore
+  imageScore = 0;
+  room.opponentSkip(data);
+  if (data.username !== username) {
+    score += 50;
+    socket.emit('updateImageIndexEvent');
+    socket.emit('updateNumMatchesEvent', {numMatches: data.numMatches});
+  } else {
+    score -= 50;
+  }
+});
+
+socket.on('scoreCalculatedEvent', (data) => {
+  score = score + data.score;
+  imageScore += data.score;
+  room.updateCalculatedScore(data.score);
+  socket.emit('updateNumMatchesEvent', {numMatches: data.numMatches});
 });
 
 socket.on('verifiedAnswerEvent', (data) => {
-  console.log(data);
-  if (data.username == username) {
+  wordsUsed.add(data.answer);
+  if (data.username === username) {
     room.addSubmittedWord(data.answer)
-  } else if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
-    socket.emit('answerMatchEvent', { answer: data.answer, points: 100 });
+  } else {
+    if (room.getSubmittedWords().includes(data.answer) && data.username === opponent) {
+      socket.emit('answerMatchEvent', { answer: data.answer, timer: timerMax - timer });
+    }
   }
+});
+
+socket.on('finishTestEvent', (data) => {
+  room = null;
+  ReactDOM.unmountComponentAtNode(document.getElementById('game-container'));
+  document.getElementById('game-container').innerHTML = '<div id="finishTest">Thank you for taking part in the test for our game. Your score this session is ' + score + '. Well done.</div>';
+});
+
+socket.on('sendNewHangmanWordEvent', (data) => {
+  room.setNewWord(data.word);
+});
+
+socket.on('newHangmanImageEvent', (data) => {
+  room.prepareForNewImage(data);
 });
 
 socket.on('finishGameEvent', (data) => {
