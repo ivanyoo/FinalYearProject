@@ -55,7 +55,7 @@ class Hangman extends React.Component {
         let lives = this.state.lives - 1;
         let hangmanImage = "hangman/" + (this.state.livesCount - lives) + ".jpg";
         if (lives <= 0) {
-          this.setState({lives, hangmanImage, info: 'You have no more lives. The missing word was ' + this.state.word + '. You scored a total of ' + this.state.score + ' points', renderWait: true, showExit: true});
+          this.setState({lives, hangmanImage, info: 'You have no more lives. The missing word was ' + this.state.word + '. You scored a total of ' + this.state.score + ' points', renderWait: true, showExit: true, skippedWord: true});
         } else {
           this.setState({lives: lives, hangmanImage});
         }
@@ -135,18 +135,18 @@ class Hangman extends React.Component {
   render() {
     return(
       <div>
-        <img id="hangmanImage" src={this.state.hangmanImage} />
         <div id="game">
+          <img id="hangmanImage" src={this.state.hangmanImage} />
           <h1>Hangman Mode</h1>
           <p id="info">{this.state.info}</p>
           <div id="photoContainer">
-            {this.state.imageURL != null && <img id="photo" src={this.state.imageURL} />}
+            {this.state.imageURL !== null && <img id="photo" src={this.state.imageURL} />}
           </div>
           <p id="lives">Lives: {this.state.lives} Score: {this.state.score}</p>
           <br />
           {!this.state.showExit && <p id="hangmanWord">{this.state.guessedWord}</p>}
           {!this.state.showExit && !this.state.skippedWord && this.renderForm()}
-          {!this.state.showExit && <p >Letters used: <p id="usedLetters">{this.state.revealedLetters}</p></p>}
+          {!this.state.showExit && <div >Letters used: <p id="usedLetters">{this.state.revealedLetters}</p></div>}
           {this.state.showExit && this.renderButtons()}
           <br />
           {!this.state.skippedWord && <button onClick={() => { this.skipWord(); }}>Skip word</button>}

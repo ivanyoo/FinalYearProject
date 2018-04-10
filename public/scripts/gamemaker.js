@@ -64,30 +64,31 @@ class GameMaker extends React.Component {
   // }
 
   // FINAL VERSION:
-  // render() {
-  //   return (<div id="lobby">
-  //     <div>
-  //       Game Mode:
-  //       <br />
-  //       <button className="btn btn-default" onClick={() => this.changeMode(0)}>Versus Mode</button>
-  //       <button className="btn btn-default" onClick={() => this.changeMode(2)}>Hangman</button>
-  //       <br/>
-  //     </div>
-  //   </div>);
-  // }
-
-
-  // TEST VERSION:
-  //
   render() {
     return (<div id="lobby">
-      <div>Game Mode:<br />
-        <button className="btn btn-default" onClick={() => this.changeMode("test1")}>Test One</button>
-        <button className="btn btn-default" onClick={() => this.changeMode('test2')}>Test Two</button>
+      <div>
+        Game Mode:
+        <br />
+        <button className="btn btn-default" onClick={() => this.changeMode(0)}>Versus Mode</button>
+        <button className="btn btn-default" onClick={() => this.changeMode(1)}>Adjectives only</button>
         <button className="btn btn-default" onClick={() => this.changeMode(2)}>Hangman</button>
         <br/>
       </div>
     </div>);
   }
+
+
+  // TEST VERSION:
+  //
+  // render() {
+  //   return (<div id="lobby">
+  //     <div>Game Mode:<br />
+  //       <button className="btn btn-default" onClick={() => this.changeMode("test1")}>Test One</button>
+  //       <button className="btn btn-default" onClick={() => this.changeMode('test2')}>Test Two</button>
+  //       <button className="btn btn-default" onClick={() => this.changeMode(2)}>Hangman</button>
+  //       <br/>
+  //     </div>
+  //   </div>);
+  // }
 
 }
