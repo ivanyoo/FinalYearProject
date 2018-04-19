@@ -1,5 +1,5 @@
 //'http://phototagging.eu-west-1.elasticbeanstalk.com/'
-const socket = io.connect('http://phototagging.eu-west-1.elasticbeanstalk.com/');
+const socket = io.connect('localhost');
 let username;
 let opponent;
 let room;
@@ -98,7 +98,7 @@ socket.on('roomJoinedEvent', (data) => {
 socket.on('roomFoundEvent', (data) => {
   // set the host
   host = data.host;
-  socket.emit('joinRoomEvent', { username: username, imageURL: data.imageURL});
+  socket.emit('joinRoomEvent', { image: data.image, username: username, imageURL: data.imageURL});
   // set opponent
   opponent = data.opponent;
 });
@@ -147,7 +147,7 @@ socket.on('newImageEvent', (data) => {
   room.getReadyForNewImage(data);
   if (data.username !== username) {
     // update index in server
-    socket.emit('updateImageIndexEvent');
+    socket.emit('updateImageIndexEvent', data);
   }
 });
 
@@ -167,7 +167,7 @@ socket.on('skipImageEvent', (data) => {
   room.opponentSkip(data);
   if (data.username !== username) {
     score += 50;
-    socket.emit('updateImageIndexEvent');
+    socket.emit('updateImageIndexEvent', data);
     socket.emit('updateNumMatchesEvent', {numMatches: data.numMatches});
   } else {
     score -= 50;

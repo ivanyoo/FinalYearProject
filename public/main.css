@@ -163,10 +163,15 @@ body {
     width: 300px;
 }
 
-#hangmanImage {
+.hangmanImage {
     width: 480px;
     margin-top: 50px;
     margin-left: 30px;
+}
+
+#hangmanImage {
+    width: 70px;
+    position: absolute;
 }
 #hangmanNextGame {
     width: 400px;

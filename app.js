@@ -27,7 +27,7 @@ const app = require('express')();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 // expose port 8081 in EBS
-server.listen(8081);
+server.listen(80);
 // use public as our main directory
 app.use(express.static(path.join(__dirname, 'public')));
 // use a parser for requests
@@ -155,8 +155,8 @@ io.on('connection', (socket) => {
          if (gameMode === 'test1') {
            // if testing hints get the hints
            getHints(image, hintslist => {
-             socket.emit('newImageEvent', {username, imageURL: results, hints: hintslist});
-             opponent.socket.emit('newImageEvent', {username, imageURL: results, hints: hintslist});
+             socket.emit('newImageEvent', {image, username, imageURL: results, hints: hintslist});
+             opponent.socket.emit('newImageEvent', {image, username, imageURL: results, hints: hintslist});
            });
          } else {
            socket.emit('newImageEvent', {username, imageURL: results, hints: []});
@@ -174,7 +174,7 @@ io.on('connection', (socket) => {
      data.hints = hints;
      data.numMatches = numMatches;
      numMatches = 0;
-     insertImageMetric(data);
+     // insertImageMetric(data);
    });
 
    socket.on('newHangmanImageEvent', () => {
@@ -247,15 +247,16 @@ io.on('connection', (socket) => {
               opponent.socket.emit('scoreCalculatedEvent', {score: score, numMatches});
               let result = {word: data.answer, timeTaken: data.timer, score: score, hints: hints};
               // update the matches table in db
-              insertMatch(result);
+              // insertMatch(result);
             });
           });
         });
       });
    });
 
-   socket.on('updateImageIndexEvent',() => {
+   socket.on('updateImageIndexEvent',(data) => {
      imageIndex++;
+     image = data.image;
    });
 
    socket.on('skipEvent', (data) => {
@@ -287,15 +288,15 @@ io.on('connection', (socket) => {
              });
            } else {
              // send the new image and the points
-             socket.emit('skipImageEvent', {username: data.username, imageURL: results,
+             socket.emit('skipImageEvent', {image, username: data.username, imageURL: results,
                score: 50, hints: [], numMatches: 0});
-             opponent.socket.emit('skipImageEvent', {username: data.username, imageURL: results,
+             opponent.socket.emit('skipImageEvent', {image, username: data.username, imageURL: results,
                score: 50, hints: [], numMatches: 0});
            }
            // update skip table in db
            data.hints = hints;
            data.numMatches = numMatches;
-           insertSkipMetric(data);
+           // insertSkipMetric(data);
            numMatches = 0;
          });
        });
@@ -383,6 +384,7 @@ io.on('connection', (socket) => {
       delete opponentSockets[gameMode][data.username];
     }
     // send event to signify start of game
+    image = data.image;
     socket.emit('roomJoinedEvent',{imageURL: data.imageURL, timer});
   });
 
@@ -453,7 +455,7 @@ io.on('connection', (socket) => {
         getImage(image, (err, results) => {
           getHints(image, (hintslist) => {
             let validWords = [];
-            for (var word = 0; word < hintslist.length; word++) {
+            for (let word = 0; word < hintslist.length; word++) {
               if (!hintslist[word].includes(' ')) {
                 validWords.push(hintslist[word]);
               }
@@ -473,8 +475,8 @@ io.on('connection', (socket) => {
          getImage(image, (err, results) => {
            host = data.username;
            // send an event to opponent client and host client that they have matched with an opponent
-           opponent.socket.emit('roomFoundEvent', {host: data.username, opponent: data.username, imageURL: results, timer});
-           socket.emit('roomFoundEvent', {host: data.username, opponent: opponent.username, imageURL: results, timer});
+           opponent.socket.emit('roomFoundEvent', {image, host: data.username, opponent: data.username, imageURL: results, timer});
+           socket.emit('roomFoundEvent', {image, host: data.username, opponent: opponent.username, imageURL: results, timer});
          });
       // else queue this socket
       } else {
